@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/vault-canister-backend"
+]
+resolver = "2"
