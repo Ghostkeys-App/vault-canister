@@ -5,6 +5,8 @@ jobs:
   build:
     runs-on: [ubuntu-latest]
     steps:
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Checkout dfx-setup
         uses: actions/checkout@v2
       - name: Install dfx
