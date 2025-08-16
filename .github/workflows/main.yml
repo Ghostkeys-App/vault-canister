@@ -6,7 +6,7 @@ jobs:
     runs-on: [ubuntu-latest]
     steps:
       - name: Checkout dfx-setup
-        uses: actions/chacekout@v2
+        uses: actions/checkout@v2
       - name: Install dfx
         uses: dfinity/setup-dfx@main
       - name: Confirm successfull dfx install
