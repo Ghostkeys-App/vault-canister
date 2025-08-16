@@ -1,3 +1,16 @@
+type DerivedPubkey = record { public_key : blob };
+type IssuedChallenge = record { nonce : blob; expires_ns : nat64 };
+type Result = variant { Ok : blob; Err : text };
+type Result_1 = variant { Ok : DerivedPubkey; Err : text };
+type Session = record {
+  vault : principal;
+  owner : principal;
+  expires_ns : nat64;
+};
 service : {
-    "greet": (text) -> (text) query;
+  issue_auth_challenge : (principal) -> (IssuedChallenge);
+  session_info : (blob) -> (opt Session) query;
+  verify_auth_proof : (principal, blob, blob) -> (Result);
+  vetkd_encrypted_key : (principal, blob, blob) -> (Result);
+  vetkd_public_key : (principal) -> (Result_1);
 }

@@ -18,3 +18,8 @@ serde_bytes = "0.11"
 sha2 = "0.10"
 # VetKeys helper crate (canister-side)
 ic-vetkeys = "0.4"
+getrandom = { version = "0.2.16", features = ["custom"] }
+futures = "0.3.31"
+
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

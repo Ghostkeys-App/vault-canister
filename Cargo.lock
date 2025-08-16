@@ -923,6 +923,8 @@ name = "vault-canister-backend"
 version = "0.1.0"
 dependencies = [
  "candid",
+ "futures",
+ "getrandom",
  "ic-cdk",
  "ic-cdk-macros",
  "ic-stable-structures",

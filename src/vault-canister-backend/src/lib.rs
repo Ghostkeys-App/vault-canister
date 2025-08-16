@@ -15,7 +15,14 @@ use ic_stable_structures::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{borrow::Cow, cell::RefCell};
+use getrandom::{register_custom_getrandom};
 
+register_custom_getrandom!(getrandom_entropy);
+pub fn getrandom_entropy(_buf: &mut [u8]) -> Result<(), getrandom::Error> {
+    futures::executor::block_on(raw_rand())
+        .map_err(|_| getrandom::Error::UNSUPPORTED)
+        .map(|_| ())
+}
 
 /*
     I'm not sure if this works. TODO: TEST WITH CLIENT. Check if this session thingy works on auth proof.
