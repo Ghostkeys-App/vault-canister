@@ -1,12 +1,12 @@
 [package]
-name = "vault-canister-backend"
+name = "vault_core"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-crate-type = ["cdylib"]
+path = "src/lib.rs"
 
 [dependencies]
 ic-cdk = "0.18.5"
@@ -20,4 +20,3 @@ sha2 = "0.10"
 ic-vetkeys = "0.4"
 getrandom = { version = "0.2.16", features = ["custom"] }
 futures = "0.3.31"
-vault_core = { path = "../vault_core" }

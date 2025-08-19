@@ -1,5 +1,7 @@
 [workspace]
 members = [
-    "src/vault-canister-backend"
+    "src/vault_core",
+    "src/vault-canister-backend",
+    "src/shared-vault-canister-backend"
 ]
 resolver = "2"

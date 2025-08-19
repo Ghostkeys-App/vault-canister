@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{borrow::Cow, cell::RefCell};
 use getrandom::{register_custom_getrandom};
+use vault_core::state::GeneralState;
 
 register_custom_getrandom!(getrandom_entropy);
 pub fn getrandom_entropy(_buf: &mut [u8]) -> Result<(), getrandom::Error> {
@@ -53,6 +54,8 @@ thread_local! {
         user: Principal::anonymous(),
         controller: Principal::anonymous(),
     });
+
+    static GENERAL_STATE: GeneralState = GeneralState::init();
 }
 
 struct CanisterOwners {
