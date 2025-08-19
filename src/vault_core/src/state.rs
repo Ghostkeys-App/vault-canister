@@ -6,9 +6,10 @@ use ic_stable_structures::{
 use std::cell::RefCell;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
+pub type VaultsMap = RefCell<StableBTreeMap<VaultKey, VaultData, Memory>>;
 pub struct GeneralState {
-    MEMORY_MANAGER: MemoryManager<DefaultMemoryImpl>,
-    VAULTS_MAP: RefCell<StableBTreeMap<VaultKey, VaultData, Memory>>,
+    pub memory_manager: MemoryManager<DefaultMemoryImpl>,
+    pub vaults_map: VaultsMap,
 }
 
 impl GeneralState {
@@ -18,8 +19,8 @@ impl GeneralState {
             memory_manager.get(MemoryId::new(0)),
         ));
         Self {
-            MEMORY_MANAGER: memory_manager,
-            VAULTS_MAP: vaults_map,
+            memory_manager,
+            vaults_map,
         }
     }
 }
