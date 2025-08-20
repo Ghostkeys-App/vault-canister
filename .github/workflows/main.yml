@@ -23,4 +23,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vault_canister_backend
-          path: target/wasm32-unknown-unknown/release/vault_canister_backend.wasm
+          path: target/wasm32-unknown-unknown/release/*.wasm
