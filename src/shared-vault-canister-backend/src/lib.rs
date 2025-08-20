@@ -46,3 +46,6 @@ fn apply_config_changes(changes: Vec<(UserId, VaultId, VaultData)>) {
         _apply_config_changes(changes, &state.vaults_map);
     });
 }
+
+
+ic_cdk::export_candid!();

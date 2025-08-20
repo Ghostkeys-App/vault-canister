@@ -12,6 +12,19 @@
         "cargo build --target wasm32-unknown-unknown --release -p vault-canister-backend --locked",
         "candid-extractor target/wasm32-unknown-unknown/release/vault_canister_backend.wasm > src/vault-canister-backend/vault-canister-backend.did"
       ]
+    },
+    "shared-vault-canister-backend": {
+      "candid": "src/shared-vault-canister-backend/shared-vault-canister-backend.did",
+      "package": "shared-vault-canister-backend",
+      "type": "rust",
+      "shrink": true,
+      "gzip": true,
+      "wasm": "target/wasm32-unknown-unknown/release/shared_vault_canister_backend.wasm",
+      "optimize": "cycles",
+      "build": [
+        "cargo build --target wasm32-unknown-unknown --release -p shared-vault-canister-backend --locked",
+        "candid-extractor target/wasm32-unknown-unknown/release/shared_vault_canister_backend.wasm > src/shared-vault-canister-backend/shared-vault-canister-backend.did"
+      ]
     }
   },
   "defaults": {
