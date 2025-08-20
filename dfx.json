@@ -7,9 +7,11 @@
       "shrink": true,
       "gzip": true,
       "wasm": "target/wasm32-unknown-unknown/release/vault-canister-backend.wasm",
-      "metadata": {
-        "name": "candid:service"
-      },
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ],
       "optimize": "cycles",
       "build": [
         "cargo build --target wasm32-unknown-unknown --release -p vault-canister-backend --locked",
@@ -23,9 +25,11 @@
       "shrink": true,
       "gzip": true,
       "wasm": "target/wasm32-unknown-unknown/release/shared_vault_canister_backend.wasm",
-      "metadata": {
-        "name": "candid:service"
-      },
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ],
       "optimize": "cycles",
       "build": [
         "cargo build --target wasm32-unknown-unknown --release -p shared-vault-canister-backend --locked",
