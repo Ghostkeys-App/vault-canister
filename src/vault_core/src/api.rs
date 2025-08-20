@@ -1,5 +1,5 @@
 use crate::{
-    state::VaultsMap,
+    stable::types::VaultsMap,
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 

@@ -1,3 +1,3 @@
 pub mod vault_type;
-pub mod state;
+pub mod stable;
 pub mod api;

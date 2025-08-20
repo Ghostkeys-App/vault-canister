@@ -1,7 +1,7 @@
 use ic_cdk_macros::{query, update};
 use vault_core::{
     api::*,
-    state::GeneralState,
+    stable::types::GeneralState,
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 

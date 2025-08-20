@@ -1,10 +1,11 @@
 use candid::{CandidType, Decode, Encode, Principal};
+use getrandom::register_custom_getrandom;
 use ic_cdk::{
-    api::{canister_liquid_cycle_balance, msg_caller}, management_canister::{
-        raw_rand, VetKDCurve, VetKDDeriveKeyArgs, VetKDKeyId,
-        VetKDPublicKeyArgs,
-    }, query, update,
-    call::Call
+    api::msg_caller,
+    management_canister::{
+        raw_rand, VetKDCurve, VetKDDeriveKeyArgs, VetKDKeyId, VetKDPublicKeyArgs,
+    },
+    query, update,
 };
 use ic_stable_structures::{
     memory_manager::{MemoryId, MemoryManager, VirtualMemory},
@@ -14,10 +15,9 @@ use ic_stable_structures::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{borrow::Cow, cell::RefCell};
-use getrandom::{register_custom_getrandom};
 use vault_core::{
     api::*,
-    state::GeneralState,
+    stable::{types::GeneralState, util::maintain_status},
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
@@ -37,10 +37,6 @@ const NONCE_TTL_NS: u64 = 120 * 1_000_000_000; // 2 minutes
 const KEY_NAME: &str = "test_key_1"; // use "key_1" on mainnet. WE NEED TO SWAP THIS FOR PROD (MAYBE, HAVEN't decided yet for the structure)
 const KEY_CURVE: VetKDCurve = VetKDCurve::Bls12_381_G2;
 
-// Threshold at which the canister should request a top-up.
-// This must be a value sufficient to serve a request and continue storing data until the top-up is received.
-const MIN_CYCLES_BALANCE : u128 = 1_000_000_000;
-
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 thread_local! {
     static MM: RefCell<MemoryManager<DefaultMemoryImpl>> =
@@ -54,26 +50,22 @@ thread_local! {
         StableBTreeMap::init(MM.with(|m| m.borrow().get(MemoryId::new(1))))
     );
 
-    static CANISTER_OWNERS: RefCell<CanisterOwners> = RefCell::new(CanisterOwners {
-        user: Principal::anonymous(),
-        controller: Principal::anonymous(),
-    });
-
     static GENERAL_STATE: GeneralState = GeneralState::init();
 }
 
-struct CanisterOwners {
-    user: Principal,
-    controller: Principal,
+fn maintain_canister_status() {
+    GENERAL_STATE.with(|m| {
+        maintain_status(&m.canister_owners);
+    });
 }
 
 #[ic_cdk_macros::init]
 fn canister_init(arg: Vec<u8>) {
-    let (user, controller): (Principal, Principal) = Decode!(&arg, (Principal, Principal))
-        .expect("Failed to decode canister init arguments");
-    CANISTER_OWNERS.with(|m| {
-        m.borrow_mut().user = user;
-        m.borrow_mut().controller = controller;
+    let (user, controller): (Principal, Principal) =
+        Decode!(&arg, (Principal, Principal)).expect("Failed to decode canister init arguments");
+    GENERAL_STATE.with(|m| {
+        m.canister_owners.borrow_mut().user = user;
+        m.canister_owners.borrow_mut().controller = controller;
     });
 }
 
@@ -159,28 +151,9 @@ fn challenge_key(owner: Principal, vault: Principal, nonce: &[u8]) -> [u8; 32] {
     h.finalize().into()
 }
 
-/// Maintains the status of the canister, performing any tasks needed to keep it operational.
-/// Every update call should trigger this function.
-/// These include:
-/// - [ ] Cleaning up expired challenges
-/// - [x] Checking the cycles balance and requesting a topup if needed
-fn maintain_status() {
-    let can_cycles = canister_liquid_cycle_balance();
-
-    if can_cycles < MIN_CYCLES_BALANCE {
-        // get the owning principal (currently factory can)
-        let owner = CANISTER_OWNERS.with_borrow(|m| m.controller);
-        // call the top_up method on the canister
-        let _result = Call::unbounded_wait(
-            owner,
-            "top_up",
-        );
-    }
-}
-
 #[update]
 pub async fn issue_auth_challenge(vault: Principal) -> IssuedChallenge {
-    maintain_status();
+    maintain_canister_status();
 
     let rand_bytes: Vec<u8> = raw_rand().await.unwrap_or_else(|_| {
         // fallback entropy (Vec<u8>)
@@ -214,7 +187,7 @@ pub async fn issue_auth_challenge(vault: Principal) -> IssuedChallenge {
 
 #[update]
 pub async fn vetkd_public_key(vault: Principal) -> Result<DerivedPubkey, String> {
-    maintain_status();
+    maintain_canister_status();
 
     let req = VetKDPublicKeyArgs {
         canister_id: None,
@@ -238,7 +211,7 @@ pub async fn vetkd_encrypted_key(
     nonce: Vec<u8>,
     transport_public_key: Vec<u8>,
 ) -> Result<Vec<u8>, String> {
-    maintain_status();
+    maintain_canister_status();
 
     let owner = msg_caller();
     let key = challenge_key(owner, vault, &nonce);
@@ -276,7 +249,7 @@ pub async fn verify_auth_proof(
     nonce: Vec<u8>,
     proof_sig: Vec<u8>,
 ) -> Result<Vec<u8>, String> {
-    maintain_status();
+    maintain_canister_status();
 
     let owner = msg_caller();
     let k = challenge_key(owner, vault, &nonce);
