@@ -9,9 +9,6 @@ pub const MIN_CYCLES_BALANCE: u128 = 1_000_000_000;
 
 /// Maintains the status of the canister, performing any tasks needed to keep it operational.
 /// Every update call should trigger this function.
-/// These include:
-/// - [ ] Cleaning up expired challenges
-/// - [x] Checking the cycles balance and requesting a topup if needed
 pub fn maintain_status(canister_owners: &CanisterOwnersState) {
     let can_cycles = canister_liquid_cycle_balance();
 
