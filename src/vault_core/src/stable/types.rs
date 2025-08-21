@@ -6,7 +6,7 @@ use ic_stable_structures::{
     DefaultMemoryImpl, StableBTreeMap,
 };
 
-use crate::vault_type::general_vault::{VaultData, VaultKey};
+use crate::vault_type::general_vault::{UserId, VaultData, VaultKey};
 
 // Stable memory for vaults
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -19,6 +19,9 @@ pub struct CanisterOwners {
 }
 pub type CanisterOwnersState = RefCell<CanisterOwners>;
 
+// Stable memory for KeyManagement. Implementation to hold per-user. Beta will have per-canister. See key_api.rs for specifications.
+pub type KeyManagementState = RefCell<StableBTreeMap<UserId, Vec<u8>, Memory>>;
+
 /*
    General state of the canister, including vaults and other relevant data.
 */
@@ -26,4 +29,5 @@ pub struct GeneralState {
     pub memory_manager: MemoryManager<DefaultMemoryImpl>,
     pub vaults_map: VaultsMap,
     pub canister_owners: CanisterOwnersState,
+    pub key_management: KeyManagementState,
 }

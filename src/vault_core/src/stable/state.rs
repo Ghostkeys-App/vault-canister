@@ -14,10 +14,12 @@ impl GeneralState {
             controller: Principal::anonymous(),
             user: Vec::default()
         });
+        let key_management = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(1))));
         Self {
             memory_manager,
             vaults_map,
             canister_owners,
+            key_management,
         }
     }
 }
