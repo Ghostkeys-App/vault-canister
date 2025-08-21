@@ -20,12 +20,12 @@ fn key_id() -> VetKDKeyId {
 }
 
 // Derive PBK offline
-fn offline_dpk(canister_id: Principal, context: &[u8], key_name: &str) -> DerivedPublicKey {
-    let kid = VetKDKeyId { curve: VetKDCurve::Bls12_381_G2, name: key_name.to_string() };
-    let mpk = MasterPublicKey::for_mainnet_key(&kid).expect("unknown key_id");
-    let can_key = mpk.derive_canister_key(canister_id.as_slice());
-    can_key.derive_sub_key(context)
-}
+// fn offline_dpk(canister_id: Principal, context: &[u8], key_name: &str) -> DerivedPublicKey {
+//     let kid = VetKDKeyId { curve: VetKDCurve::Bls12_381_G2, name: key_name.to_string() };
+//     let mpk = MasterPublicKey::for_mainnet_key(&kid).expect("unknown key_id");
+//     let can_key = mpk.derive_canister_key(canister_id.as_slice());
+//     can_key.derive_sub_key(context)
+// }
 
 // Types with Candid
 #[derive(CandidType, Deserialize, Clone)]

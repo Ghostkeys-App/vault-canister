@@ -12,7 +12,7 @@ impl GeneralState {
         let vaults_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(0))));
         let canister_owners = RefCell::new(CanisterOwners {
             controller: Principal::anonymous(),
-            user: Vec::default()
+            user: Vec::default(),
         });
         let key_management = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(1))));
         Self {

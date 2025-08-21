@@ -23,8 +23,8 @@ fn maintain_canister_status() {
     });
 }
 
-#[ic_cdk_macros::init]
-fn canister_init(arg: Vec<u8>) {
+#[update]
+fn shared_canister_init(arg: Vec<u8>) {
     GENERAL_STATE.with(|m| {
         init_controllers(arg, &m.canister_owners);
     });
