@@ -6,7 +6,7 @@ use vault_core::{
         vault_api::*,
     },
     stable::{
-        util::init_controllers,
+        util::_init_controllers,
         {types::GeneralState, util::maintain_status},
     },
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
@@ -24,9 +24,9 @@ fn maintain_canister_status() {
 }
 
 #[update]
-fn shared_canister_init(arg: Vec<u8>) {
+fn shared_canister_init(user: Principal, controller: Principal) {
     GENERAL_STATE.with(|m| {
-        init_controllers(arg, &m.canister_owners);
+        _init_controllers(user, controller, &m.canister_owners);
     });
 }
 

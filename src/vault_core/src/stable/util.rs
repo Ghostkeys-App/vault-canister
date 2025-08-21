@@ -28,6 +28,10 @@ pub fn init_controllers(arg: Vec<u8>, canister_owners: &CanisterOwnersState) {
     let (user, controller): (Principal, Principal) =
     Decode!(&arg, (Principal, Principal)).expect("Failed to decode canister init arguments");
 
+    _init_controllers(user, controller, canister_owners);
+}
+
+pub fn _init_controllers(user: Principal, controller: Principal, canister_owners: &CanisterOwnersState) {
     ic_cdk::println!("Canister initialized with user: {}, controller: {}", user, controller);
     canister_owners.borrow_mut().user.push(user);
     canister_owners.borrow_mut().controller = controller;
