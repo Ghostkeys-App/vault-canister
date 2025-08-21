@@ -1,10 +1,11 @@
+use candid::Principal;
 use ic_cdk::{query, update};
 use vault_core::{
     api::{
         key_api::{derive_vetkey, storage_user_of, GhostkeysVetKdArgs},
         vault_api::*,
     },
-    stable::{types::GeneralState, util::{init_controllers, maintain_status}},
+    stable::{types::GeneralState, util::{_init_controllers, maintain_status}},
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
@@ -19,13 +20,12 @@ fn maintain_canister_status() {
     });
 }
 
-#[ic_cdk_macros::init]
-fn canister_init(arg: Vec<u8>) {
+#[update]
+fn canister_init(user: Principal, controller: Principal) {
     GENERAL_STATE.with(|m| {
-        init_controllers(arg, &m.canister_owners);
+        _init_controllers(user, controller, &m.canister_owners);
     });
 }
-
 /*
     Key-management Specific Endpoints
 */
