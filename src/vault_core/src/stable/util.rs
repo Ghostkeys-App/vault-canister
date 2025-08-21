@@ -1,5 +1,6 @@
 use ic_cdk::{api::canister_liquid_cycle_balance, call::Call};
 use crate::stable::types::CanisterOwnersState;
+use candid::{Principal, Decode};
 
 
 // Define constants
@@ -21,4 +22,13 @@ pub fn maintain_status(canister_owners: &CanisterOwnersState) {
             "top_up",
         );
     }
+}
+
+pub fn init_controllers(arg: Vec<u8>, canister_owners: &CanisterOwnersState) {
+    let (user, controller): (Principal, Principal) =
+    Decode!(&arg, (Principal, Principal)).expect("Failed to decode canister init arguments");
+
+    ic_cdk::println!("Canister initialized with user: {}, controller: {}", user, controller);
+    canister_owners.borrow_mut().user.push(user);
+    canister_owners.borrow_mut().controller = controller;
 }

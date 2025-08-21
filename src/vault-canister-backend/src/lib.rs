@@ -17,7 +17,7 @@ use sha2::{Digest, Sha256};
 use std::{borrow::Cow, cell::RefCell};
 use vault_core::{
     api::*,
-    stable::{types::GeneralState, util::maintain_status},
+    stable::{types::GeneralState, util::{init_controllers, maintain_status}},
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
@@ -61,11 +61,8 @@ fn maintain_canister_status() {
 
 #[ic_cdk_macros::init]
 fn canister_init(arg: Vec<u8>) {
-    let (user, controller): (Principal, Principal) =
-        Decode!(&arg, (Principal, Principal)).expect("Failed to decode canister init arguments");
     GENERAL_STATE.with(|m| {
-        m.canister_owners.borrow_mut().user = user;
-        m.canister_owners.borrow_mut().controller = controller;
+        init_controllers(arg, &m.canister_owners);
     });
 }
 
@@ -153,6 +150,11 @@ fn challenge_key(owner: Principal, vault: Principal, nonce: &[u8]) -> [u8; 32] {
 
 #[update]
 pub async fn issue_auth_challenge(vault: Principal) -> IssuedChallenge {
+    ic_cdk::println!(
+        "Issuing auth challenge for vault: {} by user: {}",
+        vault,
+        msg_caller()
+    );
     maintain_canister_status();
 
     let rand_bytes: Vec<u8> = raw_rand().await.unwrap_or_else(|_| {

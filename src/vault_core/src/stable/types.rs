@@ -14,8 +14,8 @@ pub type VaultsMap = RefCell<StableBTreeMap<VaultKey, VaultData, Memory>>;
 
 // Stable memory for canister management 
 pub struct CanisterOwners {
-    pub user: Principal,
     pub controller: Principal,
+    pub user: Vec<Principal>,
 }
 pub type CanisterOwnersState = RefCell<CanisterOwners>;
 

@@ -1,12 +1,20 @@
+use candid::{ Principal };
 use ic_cdk_macros::{query, update};
 use vault_core::{
     api::*,
-    stable::types::GeneralState,
+    stable::{types::GeneralState, util::init_controllers},
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
 thread_local! {
     static GENERAL_STATE: GeneralState = GeneralState::init();
+}
+
+#[ic_cdk_macros::init]
+fn canister_init(arg: Vec<u8>) {
+    GENERAL_STATE.with(|m| {
+        init_controllers(arg, &m.canister_owners);
+    });
 }
 
 #[query]
@@ -44,6 +52,13 @@ fn clear_all_user_vaults(user_id: UserId) {
 fn apply_config_changes(changes: Vec<(UserId, VaultId, VaultData)>) {
     GENERAL_STATE.with(|state| {
         _apply_config_changes(changes, &state.vaults_map);
+    });
+}
+
+#[update]
+fn add_user(user: Principal) {
+    GENERAL_STATE.with(|state| {
+        state.canister_owners.borrow_mut().user.push(user);
     });
 }
 
