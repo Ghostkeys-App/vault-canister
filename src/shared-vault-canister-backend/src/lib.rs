@@ -2,7 +2,7 @@ use candid::Principal;
 use ic_cdk_macros::{query, update};
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, storage_user_of, GhostkeysVetKdArgs},
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs},
         vault_api::*,
     },
     stable::{
@@ -36,10 +36,17 @@ fn shared_canister_init(user: Principal, controller: Principal) {
 
 #[update]
 async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>, String> {
-    maintain_canister_status();
     let scope_copy = args.scope.clone();
-    let encrypted_key = derive_vetkey(args).await?;
     let owner_principal = storage_user_of(&scope_copy);
+
+    if let Some(existing_key) =
+        GENERAL_STATE.with(|st| st.key_management.borrow().get(&owner_principal.to_text()))
+    {
+        return Ok(existing_key);
+    }
+
+    maintain_canister_status();
+    let encrypted_key = derive_vetkey(args).await?;
 
     GENERAL_STATE.with(|st| {
         st.key_management
@@ -48,6 +55,11 @@ async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>,
     });
 
     Ok(encrypted_key)
+}
+
+#[query]
+fn get_vetkey_for_user(user_id: UserId) -> Option<Vec<u8>> {
+    GENERAL_STATE.with(|st| retrieve_vetkey_per_user(user_id, &st.key_management))
 }
 
 /*
