@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::inspect_message;
+use ic_cdk::{call::Call, inspect_message};
 use ic_cdk_macros::{query, update};
 use vault_core::{
     api::{
@@ -16,10 +16,17 @@ thread_local! {
     static GENERAL_STATE: GeneralState = GeneralState::init();
 }
 
+const MAX_VAULTS_PER_USER: usize = 3;
+const MAX_VAULT_SIZE_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+const STORAGE_PER_USER: usize = MAX_VAULTS_PER_USER * MAX_VAULT_SIZE_BYTES;
+
+const MAX_USER_STORAGE: usize = 400 * 1024 * 1024 * 1024; // 400 GB
+const MAX_USERS: usize = MAX_USER_STORAGE / STORAGE_PER_USER; // 40_000
+
 // Helper for cost-related. TODO: move
 fn maintain_canister_status() {
     GENERAL_STATE.with(|m| {
-        maintain_status(&m.canister_owners);
+        maintain_status(&m.canister_owners); // check if we need more cycles
     });
 }
 
@@ -87,6 +94,23 @@ fn get_all_vaults_for_user(user_id: UserId) -> Vec<(VaultId, VaultData)> {
 
 #[update]
 fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
+    // check we haven't exceeded max users
+    GENERAL_STATE.with(|state| {
+        let current_users: usize = state.vaults_map.borrow().len().try_into().unwrap();
+        let canister_owners = state.canister_owners.borrow();
+        if !canister_owners.user.contains(&Principal::from_text(&user_id).unwrap()) {
+            if current_users == MAX_USERS - 1 {
+                // notify the factory canister that we are at capacity, but handle this new user.
+                Call::unbounded_wait(
+                    state.canister_owners.borrow().controller,
+                    "notify_canister_at_capacity",
+                );
+            }
+            else if current_users >= MAX_USERS {
+                ic_cdk::trap("Canister at max user capacity");
+            }
+        }
+    });
     GENERAL_STATE.with(|state| {
         _add_or_update_vault(vault_id, user_id, vault, &state.vaults_map);
     });
