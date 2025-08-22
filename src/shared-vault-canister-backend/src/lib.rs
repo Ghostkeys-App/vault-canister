@@ -16,12 +16,12 @@ thread_local! {
     static GENERAL_STATE: GeneralState = GeneralState::init();
 }
 
-const MAX_VAULTS_PER_USER: usize = 3;
-const MAX_VAULT_SIZE_BYTES: usize = 1 * 1024 * 1024 * 1024; // 1 GB
-const STORAGE_PER_USER: usize = MAX_VAULTS_PER_USER * MAX_VAULT_SIZE_BYTES;
+const MAX_VAULTS_PER_USER: u64 = 3;
+const MAX_VAULT_SIZE_BYTES: u64 = 1 * 1024 * 1024 * 1024; // 1 GB
+const STORAGE_PER_USER: u64 = MAX_VAULTS_PER_USER * MAX_VAULT_SIZE_BYTES;
 
-const MAX_USER_STORAGE: usize = 400 * 1024 * 1024 * 1024; // 400 GB
-const MAX_USERS: usize = MAX_USER_STORAGE / STORAGE_PER_USER;
+const MAX_USER_STORAGE: u64 = 400 * 1024 * 1024 * 1024; // 400 GB
+const MAX_USERS: u64 = MAX_USER_STORAGE / STORAGE_PER_USER;
 
 // Helper for cost-related. TODO: move
 fn maintain_canister_status() {
@@ -97,7 +97,7 @@ fn get_all_vaults_for_user(user_id: UserId) -> Vec<(VaultId, VaultData)> {
 fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
     // check we haven't exceeded max users
     GENERAL_STATE.with(|state| {
-        let current_users: usize = state.vaults_map.borrow().len().try_into().unwrap();
+        let current_users: u64 = state.vaults_map.borrow().len();
         let mut canister_owners = state.canister_owners.borrow_mut();
         if !canister_owners.user.contains(&Principal::from_text(&user_id).unwrap()) {
             if current_users == MAX_USERS - 1 {
