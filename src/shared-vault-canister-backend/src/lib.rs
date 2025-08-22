@@ -17,11 +17,11 @@ thread_local! {
 }
 
 const MAX_VAULTS_PER_USER: usize = 3;
-const MAX_VAULT_SIZE_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+const MAX_VAULT_SIZE_BYTES: usize = 1 * 1024 * 1024 * 1024; // 1 GB
 const STORAGE_PER_USER: usize = MAX_VAULTS_PER_USER * MAX_VAULT_SIZE_BYTES;
 
 const MAX_USER_STORAGE: usize = 400 * 1024 * 1024 * 1024; // 400 GB
-const MAX_USERS: usize = MAX_USER_STORAGE / STORAGE_PER_USER; // 40_000
+const MAX_USERS: usize = MAX_USER_STORAGE / STORAGE_PER_USER;
 
 // Helper for cost-related. TODO: move
 fn maintain_canister_status() {
@@ -33,7 +33,8 @@ fn maintain_canister_status() {
 #[inspect_message]
 fn inspect_message() {
     let always_accept: Vec<String> = vec![
-        "shared_canister_init".to_string(), // needs to be reworked so only the factory can call this, and only once
+        "shared_canister_init".to_string(), // TODO - needs to be reworked so only the factory can call this, and only once
+        "add_or_update_vault".to_string(), // TODO - requires proof of work from caller to prevent canister flooding
     ];
     // call common inspect
     GENERAL_STATE.with(|m| _inspect_message(&always_accept, &m.canister_owners))
@@ -97,7 +98,7 @@ fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
     // check we haven't exceeded max users
     GENERAL_STATE.with(|state| {
         let current_users: usize = state.vaults_map.borrow().len().try_into().unwrap();
-        let canister_owners = state.canister_owners.borrow();
+        let mut canister_owners = state.canister_owners.borrow_mut();
         if !canister_owners.user.contains(&Principal::from_text(&user_id).unwrap()) {
             if current_users == MAX_USERS - 1 {
                 // notify the factory canister that we are at capacity, but handle this new user.
@@ -108,6 +109,9 @@ fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
             }
             else if current_users >= MAX_USERS {
                 ic_cdk::trap("Canister at max user capacity");
+            }
+            else {
+                canister_owners.user.push(Principal::from_text(&user_id).unwrap());
             }
         }
     });
