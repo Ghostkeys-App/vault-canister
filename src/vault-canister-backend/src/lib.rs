@@ -1,11 +1,11 @@
 use candid::Principal;
-use ic_cdk::{query, update};
+use ic_cdk::{inspect_message, query, update};
 use vault_core::{
     api::{
         key_api::{derive_vetkey, storage_user_of, GhostkeysVetKdArgs},
         vault_api::*,
     },
-    stable::{types::GeneralState, util::{_init_controllers, maintain_status}},
+    stable::{types::GeneralState, util::{_init_controllers, _inspect_message, maintain_status}},
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
@@ -20,6 +20,14 @@ fn maintain_canister_status() {
     });
 }
 
+#[inspect_message]
+fn inspect_message() {
+    let always_accept: Vec<String> = vec![
+        "canister_init".to_string(), // needs to be reworked so only the
+    ];
+    // call common inspect
+    GENERAL_STATE.with(|m| _inspect_message(&always_accept, &m.canister_owners))
+}
 #[update]
 fn canister_init(user: Principal, controller: Principal) {
     GENERAL_STATE.with(|m| {

@@ -1,4 +1,5 @@
 use candid::Principal;
+use ic_cdk::inspect_message;
 use ic_cdk_macros::{query, update};
 use vault_core::{
     api::{
@@ -6,8 +7,7 @@ use vault_core::{
         vault_api::*,
     },
     stable::{
-        util::_init_controllers,
-        {types::GeneralState, util::maintain_status},
+        types::GeneralState, util::{_init_controllers, _inspect_message, maintain_status}
     },
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
@@ -21,6 +21,29 @@ fn maintain_canister_status() {
     GENERAL_STATE.with(|m| {
         maintain_status(&m.canister_owners);
     });
+}
+
+// #[inspect_message]
+// fn inspect_message() {
+//     if is_authorized()
+//         || !["set_authorized", "transfer", "register"].contains(&call::method_name().as_str())
+//     {
+//         call::accept_message();
+//     }
+// }
+
+// #[query]
+// fn is_authorized() -> bool {
+//     STORAGE.read().custodians.contains(&api::caller())
+// }
+
+#[inspect_message]
+fn inspect_message() {
+    let always_accept: Vec<String> = vec![
+        "shared_canister_init".to_string(), // needs to be reworked so only the factory can call this, and only once
+    ];
+    // call common inspect
+    GENERAL_STATE.with(|m| _inspect_message(&always_accept, &m.canister_owners))
 }
 
 #[update]

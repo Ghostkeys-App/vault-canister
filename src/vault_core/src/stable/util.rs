@@ -29,3 +29,16 @@ pub fn _init_controllers(user: Principal, controller: Principal, canister_owners
     canister_owners.borrow_mut().user.push(user);
     canister_owners.borrow_mut().controller = controller;
 }
+
+pub fn _inspect_message(always_accept: &Vec<String>, canister_owners: &CanisterOwnersState) {
+    // if the message sender is known to us then accept the message
+    if canister_owners.borrow().user.contains(&ic_cdk::api::msg_caller())
+        || always_accept.contains(&ic_cdk::api::msg_method_name())
+    {
+        ic_cdk::api::accept_message();
+    }
+    else {
+        ic_cdk::println!("Unauthorized caller: {}", ic_cdk::api::msg_caller());
+        ic_cdk::trap(format!("Unauthorized caller: {}", ic_cdk::api::msg_caller()));
+    }
+}
