@@ -42,6 +42,7 @@ pub struct VaultData {
     pub secure_notes: SecureNoteMap,
     pub flexible_grid: FlexGridData,
     pub flexible_grid_columns: FlexGridColumns,
+    pub vault_name: String,
 }
 
 impl Storable for VaultData {
