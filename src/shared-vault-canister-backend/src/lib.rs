@@ -23,20 +23,6 @@ fn maintain_canister_status() {
     });
 }
 
-// #[inspect_message]
-// fn inspect_message() {
-//     if is_authorized()
-//         || !["set_authorized", "transfer", "register"].contains(&call::method_name().as_str())
-//     {
-//         call::accept_message();
-//     }
-// }
-
-// #[query]
-// fn is_authorized() -> bool {
-//     STORAGE.read().custodians.contains(&api::caller())
-// }
-
 #[inspect_message]
 fn inspect_message() {
     let always_accept: Vec<String> = vec![
