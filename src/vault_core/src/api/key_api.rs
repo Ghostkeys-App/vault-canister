@@ -1,9 +1,13 @@
-use candid::{CandidType, Principal, Deserialize};
-use ic_cdk::{api::msg_caller, management_canister::{vetkd_derive_key, VetKDCurve, VetKDDeriveKeyArgs, VetKDDeriveKeyResult, VetKDKeyId}};
-use ic_vetkeys::{is_valid_transport_public_key_encoding, DerivedPublicKey, MasterPublicKey};
+use candid::{CandidType, Deserialize, Principal};
+use ic_cdk::{
+    api::msg_caller,
+    management_canister::{
+        vetkd_derive_key, VetKDCurve, VetKDDeriveKeyArgs, VetKDDeriveKeyResult, VetKDKeyId,
+    },
+};
+use ic_vetkeys::is_valid_transport_public_key_encoding;
 
 use crate::stable::types::KeyManagementState;
-
 
 const KEY_NAME: &str = "test_key_1"; // use "key_1" on mainnet. For BETA will use test_key_1
 const DOMAIN: &str = "ghostkeys:v1";
@@ -22,6 +26,7 @@ fn key_id() -> VetKDKeyId {
 }
 
 // Derive PBK offline
+// Before using import DerivedPublicKey, MasterPublicKey from ic_vetkeys
 // fn offline_dpk(canister_id: Principal, context: &[u8], key_name: &str) -> DerivedPublicKey {
 //     let kid = VetKDKeyId { curve: VetKDCurve::Bls12_381_G2, name: key_name.to_string() };
 //     let mpk = MasterPublicKey::for_mainnet_key(&kid).expect("unknown key_id");
@@ -40,7 +45,7 @@ pub enum Scope {
 #[derive(CandidType, Deserialize, Clone)]
 pub struct GhostkeysVetKdArgs {
     pub input: Vec<u8>, // "vault|rotate|purpose"
-    pub scope: Scope, 
+    pub scope: Scope,
     pub transport_public_key: Vec<u8>,
 }
 
@@ -86,6 +91,9 @@ pub async fn derive_vetkey(args: GhostkeysVetKdArgs) -> Result<Vec<u8>, String> 
     Ok(encrypted_key) // opaque blob (client will decrypt+verify) | Important: Structure should remain unchanged through rotation
 }
 
-pub fn retrieve_vetkey_per_user(user_id: String, key_managemet: &KeyManagementState) -> Option<Vec<u8>> {
+pub fn retrieve_vetkey_per_user(
+    user_id: String,
+    key_managemet: &KeyManagementState,
+) -> Option<Vec<u8>> {
     key_managemet.borrow().get(&user_id)
 }

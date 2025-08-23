@@ -3,10 +3,10 @@
     "vault-canister-backend": {
       "candid": "src/vault-canister-backend/vault-canister-backend.did",
       "package": "vault-canister-backend",
-      "type": "rust",
+      "type": "custom",
       "shrink": true,
       "gzip": true,
-      "wasm": "target/wasm32-unknown-unknown/release/vault-canister-backend.wasm",
+      "wasm": "target/wasm32-unknown-unknown/release/vault_canister_backend.wasm",
       "metadata": [
         {
           "name": "candid:service"
@@ -21,7 +21,7 @@
     "shared-vault-canister-backend": {
       "candid": "src/shared-vault-canister-backend/shared-vault-canister-backend.did",
       "package": "shared-vault-canister-backend",
-      "type": "rust",
+      "type": "custom",
       "shrink": true,
       "gzip": true,
       "wasm": "target/wasm32-unknown-unknown/release/shared_vault_canister_backend.wasm",

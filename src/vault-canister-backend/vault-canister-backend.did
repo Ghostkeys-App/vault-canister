@@ -1,16 +1,29 @@
-type DerivedPubkey = record { public_key : blob };
-type IssuedChallenge = record { nonce : blob; expires_ns : nat64 };
+type FlexGridDataKey = record { col : nat32; row : nat32 };
+type GhostkeysVetKdArgs = record {
+  scope : Scope;
+  input : blob;
+  transport_public_key : blob;
+};
 type Result = variant { Ok : blob; Err : text };
-type Result_1 = variant { Ok : DerivedPubkey; Err : text };
-type Session = record {
-  vault : principal;
-  owner : principal;
-  expires_ns : nat64;
+type Scope = variant {
+  PerUser : record { user : principal };
+  PerOrg : record { org_id : blob };
+  PerCanister;
+};
+type VaultData = record {
+  flexible_grid_columns : vec record { text; record { nat32; bool } };
+  vault_name : text;
+  secure_notes : vec record { text; text };
+  flexible_grid : vec record { FlexGridDataKey; text };
+  website_logins : vec record { text; vec record { text; text } };
 };
 service : {
-  issue_auth_challenge : (principal) -> (IssuedChallenge);
-  session_info : (blob) -> (opt Session) query;
-  verify_auth_proof : (principal, blob, blob) -> (Result);
-  vetkd_encrypted_key : (principal, blob, blob) -> (Result);
-  vetkd_public_key : (principal) -> (Result_1);
+  add_or_update_vault : (text, text, VaultData) -> ();
+  apply_config_changes : (vec record { text; text; VaultData }) -> ();
+  canister_init : (principal, principal) -> ();
+  clear_all_user_vaults : (text) -> ();
+  delete_vault : (text, text) -> ();
+  derive_vetkd_encrypted_key : (GhostkeysVetKdArgs) -> (Result);
+  get_all_vaults_for_user : (text) -> (vec record { text; VaultData }) query;
+  get_vault : (text, text) -> (opt VaultData) query;
 }
