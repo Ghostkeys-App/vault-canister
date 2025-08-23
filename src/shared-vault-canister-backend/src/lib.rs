@@ -7,7 +7,8 @@ use vault_core::{
         vault_api::*,
     },
     stable::{
-        types::GeneralState, util::{_init_controllers, _inspect_message, maintain_status}
+        types::GeneralState,
+        util::{_init_controllers, _inspect_message, maintain_status},
     },
     vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
@@ -34,7 +35,7 @@ fn maintain_canister_status() {
 fn inspect_message() {
     let always_accept: Vec<String> = vec![
         "shared_canister_init".to_string(), // TODO - needs to be reworked so only the factory can call this, and only once
-        "add_or_update_vault".to_string(), // TODO - requires proof of work from caller to prevent canister flooding
+        "derive_vetkd_encrypted_key".to_string(), // TODO - requires proof of work from caller to prevent canister flooding
     ];
     // call common inspect
     GENERAL_STATE.with(|m| _inspect_message(&always_accept, &m.canister_owners))
@@ -55,6 +56,27 @@ fn shared_canister_init(user: Principal, controller: Principal) {
 async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>, String> {
     let scope_copy = args.scope.clone();
     let owner_principal = storage_user_of(&scope_copy);
+
+    // check we haven't exceeded max users
+    GENERAL_STATE.with(|state| {
+        let current_users: u64 = state.vaults_map.borrow().len();
+        let mut canister_owners = state.canister_owners.borrow_mut();
+        if !canister_owners.user.contains(&owner_principal) {
+            if current_users == MAX_USERS - 1 {
+                // notify the factory canister that we are at capacity, but handle this new user.
+                Call::unbounded_wait(
+                    state.canister_owners.borrow().controller,
+                    "notify_canister_at_capacity",
+                );
+            } else if current_users >= MAX_USERS {
+                ic_cdk::trap("Canister at max user capacity");
+            } else {
+                canister_owners
+                    .user
+                    .push(owner_principal);
+            }
+        }
+    });
 
     if let Some(existing_key) =
         GENERAL_STATE.with(|st| st.key_management.borrow().get(&owner_principal.to_text()))
@@ -95,26 +117,6 @@ fn get_all_vaults_for_user(user_id: UserId) -> Vec<(VaultId, VaultData)> {
 
 #[update]
 fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
-    // check we haven't exceeded max users
-    GENERAL_STATE.with(|state| {
-        let current_users: u64 = state.vaults_map.borrow().len();
-        let mut canister_owners = state.canister_owners.borrow_mut();
-        if !canister_owners.user.contains(&Principal::from_text(&user_id).unwrap()) {
-            if current_users == MAX_USERS - 1 {
-                // notify the factory canister that we are at capacity, but handle this new user.
-                Call::unbounded_wait(
-                    state.canister_owners.borrow().controller,
-                    "notify_canister_at_capacity",
-                );
-            }
-            else if current_users >= MAX_USERS {
-                ic_cdk::trap("Canister at max user capacity");
-            }
-            else {
-                canister_owners.user.push(Principal::from_text(&user_id).unwrap());
-            }
-        }
-    });
     GENERAL_STATE.with(|state| {
         _add_or_update_vault(vault_id, user_id, vault, &state.vaults_map);
     });
