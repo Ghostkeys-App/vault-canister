@@ -1,61 +1,158 @@
-# `vault-canister`
+# GhostKeys Vault Canister
 
-Welcome to your new `vault-canister` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+A production‑grade Internet Computer (ICP) canister that stores **encrypted secrets** for GhostKeys (humans and machines). It implements a **zero‑friction, client‑first encryption model** with **vetKD** (verifiable encryption to a derived key) so the canister never handles plaintext.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+> TL;DR: **Encrypt on the client, store on the canister, never trust the network.**
 
-To learn more before you start working with `vault-canister`, see the following documentation available online:
+---
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+## Table of Contents
 
-If you want to start working on your project right away, you might want to try the following commands:
+* [Purpose](#purpose)
+* [What’s in a Vault](#whats-in-a-vault)
+* [High‑Level Architecture](#high-level-architecture)
+* [Security Model](#security-model)
+* [Data Model](#data-model)
+* [Local Dev: build, deploy, call](#local-dev-build-deploy-call)
+* [Build & Release Artifacts](#build--release-artifacts)
+* [Stable Memory & Upgrades](#stable-memory--upgrades)
+
+---
+
+## Purpose
+
+The **Vault Canister** holds encrypted secrets (passwords, API keys, JSON blobs, etc.) and minimal associated metadata. It is designed to be used in two deployment modes:
+
+1. **Shared Vault (Free tier)** — multi‑tenant storage with strict logical isolation per `owner` (principal hash) and strong client‑side encryption.
+2. **Dedicated Vault (Premium)** — **canister‑per‑user** created by the Factory canister for custom enterprise builds.
+
+In both modes, the canister persists only opaque **ciphertext** provided by the client, plus minimal metadata required for indexing and UI rendering.
+
+---
+
+## What’s in a Vault
+
+A *vault* is a **named container** of multiple secret collections:
+
+* **Website logins** — list of website identifiers with a vector of key/value pairs (username, password, notes, etc.). Values should be ciphertext strings for sensitive fields.
+* **Secure notes** — `(title, body)` pairs. Body should be ciphertext.
+* **Flexible grid** — a spreadsheet‑style grid with **column schema** and **(row,col) keyed cells**. A boolean flag per column indicates *secret/plain* so UIs know to treat cells as sensitive. We still recommend encrypting everything by default.
+
+
+
+---
+
+## High‑Level Architecture
+![alt text](GhostkeysArchVaultCalls.png)
+
+
+* **Client does all sensitive crypto**. The canister validates and stores.
+* **vetKD** support allows deriving an encryption key bound to an identity/public info without exposing a raw key on chain.
+* **Stable memory** via `ic-stable-structures` persists data across upgrades.
+
+**Primary crates** used:
+
+* `ic-cdk` & `ic-cdk-macros` (0.18.x)
+* `ic-stable-structures` (0.7.x)
+* `candid` (0.10.x)
+* `ic-vetkeys` (0.4.x) — helper for vetKD workflows
+
+> Exact versions are pinned in `Cargo.toml`.
+
+---
+
+## Security Model
+
+**Trust boundaries**
+
+* **Plaintext never leaves the client.**
+* The canister stores: ciphertext, nonces/IVs, auth tags, public params, and safe metadata.
+* Access control is enforced by **caller principal** (`msg_caller`) and optional ACLs/owners per record.
+
+**Key flows ([Check ghostkeys-app for the full flow description](https://github.com/Ghostkeys-App/ghostkeys-app))**
+
+* **Client‑managed keys**: user/device generates and holds symmetric keys; rotates locally.
+* **vetKD‑assisted envelope**: client derives a public parameter and requests a **vetkd\_encrypted\_key** from the canister/management function; client decrypts locally and uses it to encrypt payloads. Canister never sees plaintext nor the raw key.
+
+**Do not**
+
+* Store plaintext or derived raw keys in stable memory.
+* Log secrets or derived material.
+* Return secrets in plaintext from the canister. All reads return ciphertext.
+
+
+---
+
+## Local Dev: build, deploy, call
+
+### Prereqs
+
+* Rust toolchain + `wasm32-unknown-unknown`
+* `dfx >= 0.17`
 
 ```bash
-cd vault-canister/
-dfx help
-dfx canister --help
-```
+rustup target add wasm32-unknown-unknown
 
-## Running the project locally
+# Start local replica
+dfx start --clean --background
 
-If you want to test your project locally, you can use the following commands:
-
-```bash
-# Starts the replica, running in the background
-dfx start --background
-
-# Deploys your canisters to the replica and generates your candid interface
+# Deploy
 dfx deploy
+
+# Generate declarations (if your UI needs them)
+dfx generate vault-canister-backend
 ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+**Derive vetKD key (PerUser)**
 
 ```bash
-npm run generate
+dfx canister call vault-canister-backend derive_vetkd_encrypted_key '(
+  record {
+    scope = variant { PerUser = record { user = principal "w7x7r-cok77-xa" } };
+    input = vec { 1; 2; 3; 4 };                # domain separation / context bytes
+    transport_public_key = vec { 5; 6; 7; 8 }; # client ephemeral pubkey bytes
+  }
+)'
 ```
+>***The first things to be done is to call derive_vetkd_encrypted_key endpoint to be whitelisted for other calls with your Principal.***
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
-
-If you are making frontend changes, you can start a development server with
+**Upsert a small vault**
 
 ```bash
-npm start
+# helper: a minimal VaultData literal
+VAULT_DATA='record {
+  flexible_grid_columns = vec { record { "Name"; record { 0 : nat32; false } } };
+  vault_name = "Personal";
+  secure_notes = vec { record { "Note 1"; "ENC:base64..." } };
+  flexible_grid = vec { record { record { col = 0 : nat32; row = 0 : nat32 }; "ENC:base64..." } };
+  website_logins = vec {
+    record { "github.com"; vec { record { "username"; "alice" }; record { "password"; "ENC:base64..." } } }
+  }
+}'
+
+dfx canister call vault-canister-backend add_or_update_vault '("user_abc","Personal",'"$VAULT_DATA"')'
 ```
+**List all vaults for a user**
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+```bash
+dfx canister call vault-canister-backend get_all_vaults_for_user '("user_abc")'
+```
+---
 
-### Note on frontend environment variables
+## Build & Release Artifacts
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+The CI builds produce:
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+* `vault_canister_backend.wasm` — optimized WASM
+* `shared-vault-canister-backend.did` — Candid interface
+
+> Releases are consumed by the **Factory Canister** (and by UIs using custom fetch scripts with remote `wasm`/`candid` URLs and `dfx.json`).
+
+---
+
+
+## Stable Memory & Upgrades
+
+* Storage uses stable structures (e.g., B‑Trees/Maps) keyed by `(user_id, vault_name)` → `VaultData`.
+* **Isolation**: in shared mode, authorization is by **caller principal + user mapping**; do not expose cross‑user reads. In dedicated mode, the controller set (Factory + ops) governs access.
