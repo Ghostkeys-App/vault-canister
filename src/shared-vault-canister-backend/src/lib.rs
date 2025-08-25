@@ -36,6 +36,7 @@ fn inspect_message() {
     let always_accept: Vec<String> = vec![
         "shared_canister_init".to_string(), // TODO - needs to be reworked so only the factory can call this, and only once
         "derive_vetkd_encrypted_key".to_string(), // TODO - requires proof of work from caller to prevent canister flooding
+        "get_vetkey_for_user".to_string()
     ];
     // call common inspect
     GENERAL_STATE.with(|m| _inspect_message(&always_accept, &m.canister_owners))
