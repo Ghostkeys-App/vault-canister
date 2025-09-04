@@ -6,9 +6,9 @@ pub struct CellHeader {
 }
 impl CellHeader {
     pub fn new(header : Vec<u8>) -> Self {
-        let size = u16::from_le_bytes([header[0], header[1]]);
-        let x = u8::from_le_bytes([header[2]]);
-        let y = u8::from_le_bytes([header[3]]);
+        let size = u16::from_be_bytes([header[0], header[1]]);
+        let x = u8::from_be_bytes([header[2]]);
+        let y = u8::from_be_bytes([header[3]]);
         Self { size, x, y }
     }
 }
@@ -38,6 +38,11 @@ impl Cells {
             let size = header.size as usize;
             index += size_of::<CellHeader>();
 
+            if size == 0 {
+                result.push(Cell::new(header, vec![]));
+                continue;
+            }
+            
             let cell = Cell::new(header, cells[index..index + size].to_vec());
             result.push(cell);
 
@@ -54,8 +59,8 @@ pub struct DeleteCell {
 }
 impl DeleteCell {
     pub fn new(data : Vec<u8>) -> Self {
-        let x = u8::from_le_bytes([data[0]]);
-        let y = u8::from_le_bytes([data[1]]);
+        let x = u8::from_be_bytes([data[0]]);
+        let y = u8::from_be_bytes([data[1]]);
         Self { x, y }
     }
 }
@@ -85,8 +90,8 @@ pub struct LoginMetadataHeader {
 }
 impl LoginMetadataHeader {
     pub fn new(header : Vec<u8>) -> Self {
-        let size = u16::from_le_bytes([header[0], header[1]]);
-        let x = u8::from_le_bytes([header[2]]);
+        let size = u16::from_be_bytes([header[0], header[1]]);
+        let x = u8::from_be_bytes([header[2]]);
         Self { size, x }
     }
 }
@@ -129,7 +134,7 @@ pub struct LoginData {
 impl LoginData {
     pub fn new(logindata : Vec<u8>) -> Self {
         // First 5 bytes is metadata size
-        let metadata_size = u64::from_le_bytes([0, 0, 0, logindata[0], logindata[1], logindata[2], logindata[3], logindata[4]]) as usize;
+        let metadata_size = u64::from_be_bytes([0, 0, 0, logindata[0], logindata[1], logindata[2], logindata[3], logindata[4]]) as usize;
         let metadata = LoginMetadata::new(logindata[4..4 + metadata_size].to_vec());
         let cells = Cells::new(logindata[4 + metadata_size..].to_vec());
         Self { metadata, cells }
@@ -169,7 +174,7 @@ pub struct GlobalSyncData {
 }
 impl GlobalSyncData {
     pub fn new(data : Vec<u8>) -> Self {
-        let spreadsheet_size = u64::from_le_bytes([0, 0, 0, data[0], data[1], data[2], data[3], data[5]]) as usize;
+        let spreadsheet_size = u64::from_be_bytes([0, 0, 0, data[0], data[1], data[2], data[3], data[5]]) as usize;
         let logins_size = data.len() - 5 - spreadsheet_size;
         let spreadsheet = Cells::new(data[5..5 + spreadsheet_size].to_vec());
         let logins = LoginData::new(data[5 + spreadsheet_size..5 + spreadsheet_size + logins_size].to_vec());
