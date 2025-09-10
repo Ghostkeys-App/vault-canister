@@ -42,4 +42,6 @@ pub struct GeneralState {
     pub canister_owners: CanisterOwnersState,
     pub key_management: KeyManagementState,
     pub spreadsheet_map: SpreadsheetMap,
+    pub logins_map: LoginsMap,
+    pub logins_columns: LoginsColumns,
 }

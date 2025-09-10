@@ -15,11 +15,17 @@ impl GeneralState {
             user: Vec::default(),
         });
         let key_management = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(1))));
+        let spreadsheet_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(2))));
+        let logins_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(3))));
+        let logins_columns = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(4))));
         Self {
             memory_manager,
             vaults_map,
             canister_owners,
             key_management,
+            spreadsheet_map,
+            logins_map,
+            logins_columns,
         }
     }
 }
