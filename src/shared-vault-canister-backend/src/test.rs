@@ -1,0 +1,70 @@
+use std::cell::RefCell;
+
+use candid::Principal;
+use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, StableBTreeMap, DefaultMemoryImpl};
+use vault_core::vault_type::spreadsheet::SpreadsheetKey;
+
+fn some_user_id() -> Principal {
+    Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap()
+}
+
+fn some_vault_id() -> Principal {
+    Principal::from_text("rdmx6-jaaaa-aaaaa-aaadq-cai").unwrap()
+}
+
+fn some_spreadsheet_data() -> Vec<u8> {
+    vec![
+        0x00, 0x0F, 0x00, 0x02, 0x74, 0x68, 0x65, 0x20, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x62, 0x72, 0x6F, 0x77, 0x6E, 
+        0x00, 0x00, 0x03, 0x04, 
+        0x00, 0x17, 0x0B, 0x05, 0x66, 0x6F, 0x78, 0x20, 0x6A, 0x75, 0x6D, 0x70, 0x73, 0x20, 0x6F, 0x76, 0x65, 0x72, 0x20, 0x74, 0x68, 0x65, 0x20, 0x6C, 0x61, 0x7A, 0x79, 
+        0x00, 0x03, 0x04, 0x6B, 0x64, 0x6F, 0x67
+    ]
+}
+
+#[test]
+pub fn test_deserialise_spreadsheet() {
+    let data : Vec<u8> = some_spreadsheet_data();
+    let cells = vault_core::api::deserialiser::deserialise_spreadsheet(data);
+    assert_eq!(cells.cells[0].header.x, 0);
+    assert_eq!(cells.cells[0].header.y, 2);
+    assert_eq!(cells.cells[0].data, vec![0x74, 0x68, 0x65, 0x20, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x62, 0x72, 0x6F, 0x77, 0x6E]);
+    assert_eq!(cells.cells[1].header.x, 3);
+    assert_eq!(cells.cells[1].header.y, 4);
+    assert_eq!(cells.cells[2].header.x, 11);
+    assert_eq!(cells.cells[2].header.y, 5);
+    assert_eq!(cells.cells[2].data, vec![0x66, 0x6F, 0x78, 0x20, 0x6A, 0x75, 0x6D, 0x70, 0x73, 0x20, 0x6F, 0x76, 0x65, 0x72, 0x20, 0x74, 0x68, 0x65, 0x20, 0x6C, 0x61, 0x7A, 0x79]);
+    assert_eq!(cells.cells[3].header.x, 4);
+    assert_eq!(cells.cells[3].header.y, 107);
+    assert_eq!(cells.cells[3].data, vec![0x64, 0x6F, 0x67]);
+}
+
+#[test]
+pub fn test_vault_spreadsheet_sync () {
+    let memory_manager = MemoryManager::init(DefaultMemoryImpl::default());
+    let spreadsheet_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(0))));
+    
+    let user_id = some_user_id();
+    let vault_id = some_vault_id();
+    let data : Vec<u8> = some_spreadsheet_data();
+    
+    let key2 = SpreadsheetKey::new(user_id, vault_id, 3, 4);
+    
+    spreadsheet_map.borrow_mut().insert(key2.clone(), vault_core::vault_type::spreadsheet::SpreadsheetValue::new(vec![0x61, 0x62, 0x63]));
+    vault_core::api::serial_api::_vault_spreadsheet_sync(user_id.clone(), vault_id.clone(), data.clone(), &spreadsheet_map);
+    
+    let spreadsheets = spreadsheet_map.borrow();
+    
+    let key1 = SpreadsheetKey::new(user_id, vault_id,  0, 2);
+    let key3 = SpreadsheetKey::new(user_id, vault_id, 11, 5);
+    let key4 = SpreadsheetKey::new(user_id, vault_id, 4, 107);
+
+    let first = spreadsheets.get(&key1);
+    let second = spreadsheets.get(&key2);
+    let third = spreadsheets.get(&key3);
+    let fourth = spreadsheets.get(&key4);
+    assert_eq!(first.unwrap().data, vec![0x74, 0x68, 0x65, 0x20, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x62, 0x72, 0x6F, 0x77, 0x6E]);
+    assert_eq!(second.is_some(), false);
+    assert_eq!(third.unwrap().data, vec![0x66, 0x6F, 0x78, 0x20, 0x6A, 0x75, 0x6D, 0x70, 0x73, 0x20, 0x6F, 0x76, 0x65, 0x72, 0x20, 0x74, 0x68, 0x65, 0x20, 0x6C, 0x61, 0x7A, 0x79]);
+    assert_eq!(fourth.unwrap().data, vec![0x64, 0x6F, 0x67]);
+}
+

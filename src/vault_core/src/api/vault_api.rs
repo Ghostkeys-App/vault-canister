@@ -1,6 +1,8 @@
 use crate::{
-    stable::types::VaultsMap,
-    vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
+    stable::types::{VaultsMap}, 
+    vault_type::{
+        general_vault::{UserId, VaultData, VaultId, VaultKey}
+    }
 };
 
 pub fn _add_or_update_vault(vault_id: VaultId, user_id: UserId, data: VaultData, vm: &VaultsMap) {

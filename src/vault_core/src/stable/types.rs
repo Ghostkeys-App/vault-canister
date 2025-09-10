@@ -3,14 +3,21 @@ use std::cell::RefCell;
 use candid::Principal;
 use ic_stable_structures::{
     memory_manager::{MemoryManager, VirtualMemory},
-    DefaultMemoryImpl, StableBTreeMap,
+    DefaultMemoryImpl, StableBTreeMap
 };
 
-use crate::vault_type::general_vault::{UserId, VaultData, VaultKey};
+use crate::vault_type::{
+    general_vault::{UserId, VaultData, VaultKey}, 
+    spreadsheet::{SpreadsheetKey, SpreadsheetValue}, 
+    logins::LoginSiteKey
+};
 
 // Stable memory for vaults
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 pub type VaultsMap = RefCell<StableBTreeMap<VaultKey, VaultData, Memory>>;
+pub type SpreadsheetMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
+pub type LoginsMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
+pub type LoginsColumns = RefCell<StableBTreeMap<LoginSiteKey, Vec<u8>, Memory>>;
 
 // Stable memory for canister management 
 pub struct CanisterOwners {
@@ -30,4 +37,5 @@ pub struct GeneralState {
     pub vaults_map: VaultsMap,
     pub canister_owners: CanisterOwnersState,
     pub key_management: KeyManagementState,
+    pub spreadsheet_map: SpreadsheetMap,
 }
