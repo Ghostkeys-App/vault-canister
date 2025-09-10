@@ -21,4 +21,3 @@ ic-vetkeys = "0.4"
 getrandom = { version = "0.2.16", features = ["custom"] }
 futures = "0.3.31"
 vault_core = { path = "../vault_core" }
-pocket-ic = "9.0.2"
