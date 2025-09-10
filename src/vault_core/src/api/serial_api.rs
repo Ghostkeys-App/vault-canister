@@ -123,8 +123,8 @@ pub fn _login_metadata_sync(user_id: Principal, vault_id: Principal, update: Vec
         return;
     }
 
-    let login_data = deserialise_login_full_sync(update);
-    _process_metadata(user_id, vault_id, &login_data.metadata, lc, lm);
+    let login_data = deserialise_login_metadata(update);
+    _process_metadata(user_id, vault_id, &login_data, lc, lm);
 }
 
 // Interface function to deserialise and process a metadata-only delete of login data. Note this 
@@ -154,7 +154,7 @@ pub fn _login_data_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>
 
     let login_data = deserialise_login_data_sync(update);
     
-    _process_login_data(user_id, vault_id, &login_data.cells, lm);
+    _process_login_data(user_id, vault_id, &login_data, lm);
 }
 
 pub fn _login_data_deletes(user_id: Principal, vault_id: Principal, update: Vec<u8>, lm: &LoginsMap) {

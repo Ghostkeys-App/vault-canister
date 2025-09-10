@@ -253,4 +253,12 @@ fn get_spreadsheet(vault_id: Principal) -> vault_core::api::dev_api::Spreadsheet
     })
 }
 
+#[query]
+fn get_logins(vault_id: Principal) -> vault_core::api::dev_api::Logins {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_logins(user_id, vault_id, &state.logins_map, &state.logins_columns)
+    })
+}
+
 ic_cdk::export_candid!();

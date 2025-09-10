@@ -21,8 +21,8 @@ pub fn deserialise_login_full_sync(data : Vec<u8>) -> LoginData {
     LoginData::new(data)
 }
 
-pub fn deserialise_login_data_sync(data : Vec<u8>) -> LoginData {
-    LoginData::new(data)
+pub fn deserialise_login_data_sync(data : Vec<u8>) -> Cells {
+    Cells::new(data)
 }
 
 pub fn deserialise_login_metadata(data : Vec<u8>) -> LoginMetadata {

@@ -88,6 +88,7 @@ impl DeleteCells {
 
 // Identifies the "name" of a group of identities, usually the website or app the login is for.
 // Thus this only needs to be unique on the x axis.
+#[repr(align(1))]
 pub struct LoginMetadataHeader {
     pub size : u16,
     pub x : u8,
@@ -121,7 +122,7 @@ impl LoginMetadata {
         while index < metadatas.len() {
             let header = LoginMetadataHeader::new(metadatas[index..index+3].to_vec());
             let size = header.size as usize;
-            index += size_of::<LoginMetadataHeader>();
+            index += 3;
             let metadata = LoginMetadataEntry::new(header, metadatas[index..index + size].to_vec());
             result.push(metadata);
             index += size;
