@@ -1,6 +1,11 @@
 use candid::Principal;
 use ic_cdk::{call::Call, inspect_message};
 use ic_cdk_macros::{query, update};
+
+// import tests
+#[cfg(test)]
+mod test;
+
 use vault_core::{
     api::{
         key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs},
