@@ -22,6 +22,9 @@ impl SpreadsheetKey {
             y,
         }
     }
+    pub fn principals_match(&self, principals: &Vec<u8>) -> bool {
+        self.principals.len() == principals.len() && self.principals == *principals
+    }
 }
 impl Storable for SpreadsheetKey {
     const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Bounded {

@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::{call::Call, inspect_message};
+use ic_cdk::{api::msg_caller, call::Call, inspect_message};
 use ic_cdk_macros::{query, update};
 
 // import tests
@@ -8,8 +8,7 @@ mod test;
 
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs},
-        vault_api::*,
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}, vault_api::*
     },
     stable::{
         types::GeneralState,
@@ -70,7 +69,7 @@ async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>,
         if !canister_owners.user.contains(&owner_principal) {
             if current_users == MAX_USERS - 1 {
                 // notify the factory canister that we are at capacity, but handle this new user.
-                Call::unbounded_wait(
+                let _ = Call::unbounded_wait(
                     state.canister_owners.borrow().controller,
                     "notify_canister_at_capacity",
                 );
@@ -108,7 +107,7 @@ fn get_vetkey_for_user(user_id: UserId) -> Option<Vec<u8>> {
 }
 
 /*
-    Vault Specific Endpoints
+    Legacy Vault Specific Endpoints
 */
 
 #[query]
@@ -154,6 +153,104 @@ fn add_user(user: Principal) {
     GENERAL_STATE.with(|state| {
         state.canister_owners.borrow_mut().user.push(user);
     });
+}
+
+/* 
+    New vault-specific update endpoints 
+*/
+
+#[update] 
+fn vault_spreadsheet_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_spreadsheet_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.spreadsheet_map,
+        );
+    });
+}
+
+#[update]
+fn vault_spreadsheet_deletes(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_spreadsheet_delete(user_id, vault_id, update, &state.spreadsheet_map);
+    });
+}
+
+#[update]
+fn vault_login_full_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_full_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.logins_columns,
+            &state.logins_map,
+        );
+    });
+}
+
+#[update]
+fn vault_login_metadata_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_metadata_sync(user_id, vault_id, update, &state.logins_columns, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_metadata_delete(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_metadata_delete(user_id, vault_id, update, &state.logins_columns, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_data_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_data_sync(user_id, vault_id, update, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_data_deletes(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_data_deletes(user_id, vault_id, update, &state.logins_map);
+    });
+}
+
+#[update]
+fn global_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _global_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.logins_columns,
+            &state.logins_map,
+            &state.spreadsheet_map,
+        );
+    });
+}
+
+/* 
+    New vault-specific query endpoints
+*/
+
+#[query]
+fn get_spreadsheet(vault_id: Principal) -> vault_core::api::dev_api::Spreadsheet {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_spreadsheet(user_id, vault_id, &state.spreadsheet_map)
+    })
 }
 
 ic_cdk::export_candid!();
