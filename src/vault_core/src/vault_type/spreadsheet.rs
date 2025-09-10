@@ -2,7 +2,12 @@ use candid::{Principal};
 use ic_stable_structures::storable::Storable;
 
 pub struct SpreadsheetKey {
+    // Combination of user_id and vault_id. We don't need to know which is which 
+    // or be able to reconstruct them, just use them to uniquely ID the entry.
     pub principals: Vec<u8>,
+
+    // X and Y coordinates of the cell in the spreadsheet. This is required by 
+    // frontend to identify the cell.
     pub x: u8,
     pub y: u8,
 }

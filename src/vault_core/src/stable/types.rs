@@ -15,7 +15,11 @@ use crate::vault_type::{
 // Stable memory for vaults
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 pub type VaultsMap = RefCell<StableBTreeMap<VaultKey, VaultData, Memory>>;
+
+// Stable memory for spreadsheets.
 pub type SpreadsheetMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
+
+// Stable memory for login data and metadata.
 pub type LoginsMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
 pub type LoginsColumns = RefCell<StableBTreeMap<LoginSiteKey, Vec<u8>, Memory>>;
 

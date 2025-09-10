@@ -1,4 +1,6 @@
-
+// Fixed-size header for cell data. size field is used to then extract the cell data.
+// x and y are the coordinates of the cell in 2D space and are used as part of the 
+// key in stable storage so they can be reported to the client on retrieval.
 pub struct CellHeader {
     pub size : u16,
     pub x : u8,
@@ -84,6 +86,8 @@ impl DeleteCells {
 }
 
 
+// Identifies the "name" of a group of identities, usually the website or app the login is for.
+// Thus this only needs to be unique on the x axis.
 pub struct LoginMetadataHeader {
     pub size : u16,
     pub x : u8,
