@@ -1,10 +1,10 @@
 use candid::Principal;
-
+use ic_stable_structures::Storable;
 use crate::{
-    api::deserialiser::{deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_spreadsheet}, 
-    stable::types::{LoginsColumns, LoginsMap, SpreadsheetMap}, 
+    api::deserialiser::{deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet}, 
+    stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap}, 
     vault_type::{
-        logins::LoginSiteKey, spreadsheet::{SpreadsheetKey, SpreadsheetValue}
+        logins::LoginSiteKey, secure_notes::{SecureNote, SecureNoteKey}, spreadsheet::{SpreadsheetKey, SpreadsheetValue}
     }
 };
 
@@ -169,6 +169,33 @@ pub fn _login_data_deletes(user_id: Principal, vault_id: Principal, update: Vec<
         let key = SpreadsheetKey::new(user_id, vault_id, cell.x, cell.y);
         logins.remove(&key);
     }
+}
+
+fn _process_notes_data(user_id: Principal, vault_id: Principal, notes_data: &super::deserialiser_types::SecureNotesData, nm: &NotesMap) {
+    let mut nm = nm.borrow_mut();
+
+    for note in notes_data.notes.iter() {
+        let principals = vec![user_id.into_bytes(), vault_id.into_bytes()].concat();
+        let key = SecureNoteKey {
+            index: note.header.x,
+            principals
+        };
+        if note.note.is_empty()
+        {
+            nm.remove(&key);
+            continue;
+        }
+        nm.insert(key, SecureNote::new(note.label.clone(), note.note.clone()));
+    }
+}
+
+pub fn _secret_notes_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, nm: &NotesMap) {
+    if update.is_empty() {
+        return;
+    }
+
+    let notes = deserialise_secure_notes(update);
+    _process_notes_data(user_id, vault_id, &notes, nm);
 }
 
 pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, lc: &LoginsColumns, lm: &LoginsMap, sm: &SpreadsheetMap) {

@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use candid::Principal;
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, StableBTreeMap, DefaultMemoryImpl};
-use vault_core::{api::{dev_api::_get_logins, serial_api::{_login_data_sync, _login_metadata_sync}}, vault_type::spreadsheet::SpreadsheetKey};
+use vault_core::{api::{dev_api::{_get_logins, _get_notes}, serial_api::{_login_data_sync, _login_metadata_sync, _secret_notes_sync}}, vault_type::spreadsheet::SpreadsheetKey};
 
 fn some_user_id() -> Principal {
     Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap()
@@ -48,6 +48,13 @@ fn some_login_metadata() -> Vec<u8> {
         0x00, 0x0F, 0x00, 0x74, 0x68, 0x65, 0x20, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x62, 0x72, 0x6F, 0x77, 0x6E, 
         0x00, 0x17, 0x01, 0x66, 0x6F, 0x78, 0x20, 0x6A, 0x75, 0x6D, 0x70, 0x73, 0x20, 0x6F, 0x76, 0x65, 0x72, 0x20, 0x74, 0x68, 0x65, 0x20, 0x6C, 0x61, 0x7A, 0x79, 
         0x00, 0x03, 0x02, 0x64, 0x6F, 0x67   
+    ]
+}
+
+fn some_notes_data() -> Vec<u8> {
+    vec![
+        0x05, 0x00, 0x0e, 0x00, b'l', b'a', b'b', b'e', b'l', b's', b'o', b'm', b'e', b' ', b'n', b'o', b't', b'e', b' ', b'd', b'a', b't', b'a',
+        0x02, 0x00, 0x05, 0x01, b'l', b'a', b's', b'o', b'm', b'e', b' ',
     ]
 }
 
@@ -146,4 +153,22 @@ pub fn test_get_logins() {
     
     let logins_data = _get_logins(user_id.clone(), vault_id.clone(), &logins, &logins_columns);
     assert_eq!(logins_data.columns.len(), 2);
+}
+
+#[test]
+pub fn test_get_notes() {
+    let memory_manager = MemoryManager::init(DefaultMemoryImpl::default());
+    let notes = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(0))));
+
+    let user_id = some_user_id();
+    let vault_id = some_vault_id();
+    let notes_data = some_notes_data();
+
+    _secret_notes_sync(user_id, vault_id, notes_data, &notes);
+
+    assert_eq!(notes.borrow().is_empty(), false);
+
+    let get_notes = _get_notes(user_id.clone(), vault_id.clone(), &notes);
+
+    assert_eq!(get_notes.notes.len(), 2);
 }

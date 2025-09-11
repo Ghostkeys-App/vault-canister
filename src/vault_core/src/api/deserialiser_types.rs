@@ -172,6 +172,54 @@ impl DeleteMetadatas {
     }
 }
 
+/*
+    Secure Notes
+*/
+
+pub struct SecureNoteHeader {
+    pub label_size: u8, 
+    pub note_size: u16,
+    pub x: u8,
+}
+impl SecureNoteHeader {
+    pub fn new(header: Vec<u8>) -> Self {
+        let label_size = u8::from_be_bytes([header[0]]);
+        let note_size = u16::from_be_bytes([header[1], header[2]]);
+        let x = u8::from_be_bytes([header[3]]);
+        Self { label_size, note_size, x }
+    }
+}
+
+pub struct SecureNoteEntry {
+    pub header: SecureNoteHeader,
+    pub label: Vec<u8>,
+    pub note: Vec<u8>,
+}
+impl SecureNoteEntry {
+    pub fn new(data: Vec<u8>) -> Self {
+        let header = SecureNoteHeader::new(data[0..4].to_vec());
+        let label = data[4..4 + header.label_size as usize].to_vec();
+        let note = data[4 + header.label_size as usize..4 + header.label_size as usize + header.note_size as usize].to_vec();
+        Self { header, label, note }
+    }
+}
+
+pub struct SecureNotesData {
+    pub notes: Vec<SecureNoteEntry>,
+}
+impl SecureNotesData {
+    pub fn new(data: Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut result = Vec::new();
+        while index < data.len() {
+            let entry = SecureNoteEntry::new(data[index..].to_vec());
+            index += 4 + entry.header.label_size as usize + entry.header.note_size as usize;
+            result.push(entry);
+        }
+        Self { notes: result }
+    }
+}
+
 // Describes a global sync, containing complete login data and spreadsheet data.
 pub struct GlobalSyncData {
     pub logins : LoginData,

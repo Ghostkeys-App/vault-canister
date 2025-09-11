@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::{inspect_message, query, update};
+use ic_cdk::{inspect_message, update};
 use vault_core::{
     api::{
         key_api::{derive_vetkey, storage_user_of, GhostkeysVetKdArgs},

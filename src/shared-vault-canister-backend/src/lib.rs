@@ -8,7 +8,7 @@ mod test;
 
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
     },
     stable::{
         types::GeneralState,
@@ -173,6 +173,14 @@ fn vault_login_data_deletes(vault_id: Principal, update: Vec<u8>) {
     let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
         _login_data_deletes(user_id, vault_id, update, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_secrets_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _secret_notes_sync(user_id, vault_id, update, &state.notes_map);
     });
 }
 

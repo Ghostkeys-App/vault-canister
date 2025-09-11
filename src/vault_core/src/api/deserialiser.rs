@@ -1,3 +1,5 @@
+use crate::api::deserialiser_types::SecureNotesData;
+
 use super::deserialiser_types::{Cells, DeleteCells, LoginData, LoginMetadata, GlobalSyncData};
 
 /*
@@ -31,6 +33,13 @@ pub fn deserialise_login_metadata(data : Vec<u8>) -> LoginMetadata {
 
 pub fn deserialise_login_sync(data : Vec<u8>) -> Cells {
     Cells::new(data)
+}
+
+/*
+    Secure notes deserialiser
+*/
+pub fn deserialise_secure_notes(data: Vec<u8>) -> SecureNotesData {
+    SecureNotesData::new(data)
 }
 
 /*
