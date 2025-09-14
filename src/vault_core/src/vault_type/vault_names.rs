@@ -12,6 +12,16 @@ impl VaultNameKey {
         principals.extend(vault_id.iter());
         Self { principals }
     }
+    pub fn user_principals_match(&self, user_id: &Vec<u8>) -> bool {
+        let mut index = 0;
+        while index < user_id.len() && index < self.principals.len() {
+            if user_id[index] != self.principals[index] {
+                return false;
+            }
+            index += 1;
+        }
+        return true;
+    }
 }
 impl Storable for VaultNameKey {
     const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Bounded { max_size: 512, is_fixed_size: false };

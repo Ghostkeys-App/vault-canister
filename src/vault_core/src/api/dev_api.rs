@@ -2,8 +2,32 @@ use std::collections::HashMap;
 use ic_stable_structures::Storable;
 use candid::{Principal, CandidType, Deserialize};
 
-use crate::stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap};
+use crate::stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap};
 
+/* 
+    Vault names devapi structures
+*/
+
+#[derive(CandidType, Deserialize)]
+pub struct VaultNames {
+    pub names: HashMap<Vec<u8>, Vec<u8>>
+}
+pub fn _get_vault_names(user_id: Principal, vnm: &VaultNamesMap) -> VaultNames {
+    let vault_names = vnm.borrow();
+    let uid_bytes = user_id.as_slice().to_vec();
+    let mut names_map: HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
+
+    for entry in vault_names.iter() {
+        let (key, value) = entry.into_pair();
+        if !key.user_principals_match(&uid_bytes) {
+            continue;
+        }
+        let vault_id = key.principals[uid_bytes.len()..].to_vec();
+        names_map.insert(vault_id, value.name);
+    }
+
+    VaultNames { names:  names_map }
+}
 
 /* 
     Spreadsheet devapi structures.

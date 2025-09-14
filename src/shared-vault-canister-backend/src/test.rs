@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 
 use candid::Principal;
-use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, StableBTreeMap, DefaultMemoryImpl};
-use vault_core::{api::{dev_api::{_get_logins, _get_notes}, serial_api::{_login_data_sync, _login_metadata_sync, _secret_notes_sync}}, vault_type::spreadsheet::SpreadsheetKey};
+use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, DefaultMemoryImpl, StableBTreeMap, Storable};
+use vault_core::{api::{dev_api::{_get_logins, _get_notes}, serial_api::{_login_data_sync, _login_metadata_sync, _secret_notes_sync, _vault_names_sync}}, vault_type::spreadsheet::SpreadsheetKey};
+use vault_core::api::dev_api::_get_vault_names;
 
 fn some_user_id() -> Principal {
     Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap()
@@ -57,6 +58,75 @@ fn some_notes_data() -> Vec<u8> {
         0x02, 0x00, 0x05, 0x01, b'l', b'a', b's', b'o', b'm', b'e', b' ',
     ]
 }
+
+fn some_vault_names() -> Vec<u8> {
+    let vault_1_principal: Vec<u8> = some_vault_id().to_bytes().into();
+    let vault_2_principal: Vec<u8> = some_user_id().to_bytes().into();
+    let mut data = Vec::new();
+
+    let mut key_1: Vec<u8> = Vec::new();
+    
+    key_1.extend_from_slice(&vault_1_principal);
+    let val_1: Vec<u8> = b"My First Vault".to_vec();
+    let principal_len = key_1.len() as u8;
+    let name_len = val_1.len() as u16;
+
+    let mut header = Vec::with_capacity(3);
+    header.push(principal_len);
+    header.push((name_len >> 8) as u8);
+    header.push((name_len & 0xFF) as u8);
+
+    data.extend_from_slice(&header);
+    data.extend_from_slice(&key_1);
+    data.extend_from_slice(&val_1);
+    
+    let mut key_2: Vec<u8> = Vec::new();
+    
+    key_2.extend_from_slice(&vault_2_principal);
+    let val_2: Vec<u8> = b"Other Vault".to_vec();
+    let principal_len = key_2.len() as u8;
+    let name_len = val_2.len() as u16;
+
+    let mut header = Vec::with_capacity(3);
+    header.push(principal_len);
+    header.push((name_len >> 8) as u8);
+    header.push((name_len & 0xFF) as u8);
+
+    data.extend_from_slice(&header);
+    data.extend_from_slice(&key_2);
+    data.extend_from_slice(&val_2);
+
+    data
+}
+
+#[test]
+pub fn test_deserialise_vault_names() {
+
+    let data = some_vault_names();
+    let user_id = some_user_id();
+    let other_user_id = some_vault_id();
+    let vault_id_1 = some_vault_id().to_bytes().to_vec();
+    let vault_id_2 = some_user_id().to_bytes().to_vec();
+
+    let memory_manager = MemoryManager::init(DefaultMemoryImpl::default());
+    let vault_names_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(0))));
+
+    // Deserialise into VaultNamesMap
+    _vault_names_sync(user_id, &data, &vault_names_map);
+
+    // Add extra noise associated with another user to ensure we filter properly for the caller
+    _vault_names_sync(other_user_id, &data, &vault_names_map);
+
+    assert_eq!(vault_names_map.borrow().len(), 4);
+
+    // Use _get_vault_names to retrieve names
+    let names = _get_vault_names(user_id, &vault_names_map);
+
+    assert_eq!(names.names.get(&vault_id_1).unwrap(), &b"My First Vault".to_vec());
+    assert_eq!(names.names.get(&vault_id_2).unwrap(), &b"Other Vault".to_vec());
+    assert_eq!(names.names.len(), 2);
+}
+
 
 #[test]
 pub fn test_deserialise_spreadsheet() {

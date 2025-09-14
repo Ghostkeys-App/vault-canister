@@ -18,12 +18,12 @@ pub struct VaultName {
 }
 impl VaultName {
     pub fn new(data: Vec<u8>) -> Self {
-        let header = VaultNameHeader::new(data[0..2].to_vec());
+        let header = VaultNameHeader::new(data[..3].to_vec());
         let header_end : usize = 3;
         let principal_end: usize = header_end+(header.principal_size as usize);
         let name_end: usize = principal_end+(header.name_size as usize);
         let vault_id: Vec<u8> = data[header_end..principal_end].to_vec();
-        let vault_name: Vec<u8> = data[principal_end+1..name_end].to_vec();
+        let vault_name: Vec<u8> = data[principal_end..name_end].to_vec();
         Self {
             header,
             vault_id,
