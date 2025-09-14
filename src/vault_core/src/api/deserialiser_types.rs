@@ -1,3 +1,54 @@
+// Fixed-size header for vault name data. 
+pub struct VaultNameHeader {
+    pub principal_size: u8,
+    pub name_size: u16
+}
+impl VaultNameHeader {
+    pub fn new(header: Vec<u8>) -> Self {
+        let principal_size = u8::from_be_bytes([header[0]]);
+        let name_size = u16::from_be_bytes([header[1], header[2]]);
+        Self { principal_size, name_size }
+    }
+}
+
+pub struct VaultName {
+    pub header: VaultNameHeader,
+    pub vault_id: Vec<u8>,
+    pub vault_name: Vec<u8>
+}
+impl VaultName {
+    pub fn new(data: Vec<u8>) -> Self {
+        let header = VaultNameHeader::new(data[0..2].to_vec());
+        let header_end : usize = 3;
+        let principal_end: usize = header_end+(header.principal_size as usize);
+        let name_end: usize = principal_end+(header.name_size as usize);
+        let vault_id: Vec<u8> = data[header_end..principal_end].to_vec();
+        let vault_name: Vec<u8> = data[principal_end+1..name_end].to_vec();
+        Self {
+            header,
+            vault_id,
+            vault_name
+        }
+    }
+}
+
+pub struct VaultNames {
+    pub names: Vec<VaultName>
+}
+impl VaultNames {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut names: Vec<VaultName> = Vec::new();
+        while index < data.len() {
+            let entry = VaultName::new(data[index..].to_vec());
+            index += (entry.header.name_size as usize) + (entry.header.principal_size as usize) + 3;
+            names.push(entry);
+        }
+        Self { names }
+    }
+}
+
+
 // Fixed-size header for cell data. size field is used to then extract the cell data.
 // x and y are the coordinates of the cell in 2D space and are used as part of the 
 // key in stable storage so they can be reported to the client on retrieval.

@@ -1,6 +1,13 @@
-use crate::api::deserialiser_types::SecureNotesData;
+use crate::api::deserialiser_types::{SecureNotesData, VaultNames};
 
 use super::deserialiser_types::{Cells, DeleteCells, LoginData, LoginMetadata, GlobalSyncData};
+
+/*
+    Vault name deserialiser
+*/
+pub fn deserialise_vault_names(data: &Vec<u8>) -> VaultNames {
+    VaultNames::new(data)
+}
 
 /*
  * Spreadsheet deserialisers

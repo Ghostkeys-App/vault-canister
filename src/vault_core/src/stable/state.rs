@@ -17,6 +17,7 @@ impl GeneralState {
         let logins_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(3))));
         let logins_columns = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(4))));
         let notes_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(5))));
+        let vault_names_map =  RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(6))));
         Self {
             memory_manager,
             canister_owners,
@@ -24,7 +25,8 @@ impl GeneralState {
             spreadsheet_map,
             logins_map,
             logins_columns,
-            notes_map
+            notes_map,
+            vault_names_map
         }
     }
 }

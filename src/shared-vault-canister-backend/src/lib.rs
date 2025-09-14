@@ -8,7 +8,7 @@ mod test;
 
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
     },
     stable::{
         types::GeneralState,
@@ -108,6 +108,14 @@ fn get_vetkey_for_user(user_id: String) -> Option<Vec<u8>> {
 /* 
     New vault-specific update endpoints 
 */
+
+#[update]
+fn vault_names_sync(update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_names_sync(user_id, &update, &state.vault_names_map);
+    })
+}
 
 #[update] 
 fn vault_spreadsheet_sync(vault_id: Principal, update: Vec<u8>) {

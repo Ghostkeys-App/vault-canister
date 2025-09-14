@@ -1,12 +1,38 @@
 use candid::Principal;
 use ic_stable_structures::Storable;
 use crate::{
-    api::deserialiser::{deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet}, 
-    stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap}, 
+    api::deserialiser::{deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, 
+    stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
     vault_type::{
-        logins::LoginSiteKey, secure_notes::{SecureNote, SecureNoteKey}, spreadsheet::{SpreadsheetKey, SpreadsheetValue}
+        logins::LoginSiteKey, 
+        secure_notes::{SecureNote, SecureNoteKey}, 
+        spreadsheet::{SpreadsheetKey, SpreadsheetValue}, 
+        vault_names::{VaultNameKey, VaultNameValue}
     }
 };
+
+// Internal function to process a set of deserialised vault name data
+fn _process_vault_names(user_id: Principal, names: &super::deserialiser_types::VaultNames, vnm: &VaultNamesMap) {
+    let mut names_map = vnm.borrow_mut();
+    for name in names.names.iter() {
+        let key = VaultNameKey::new(user_id, &name.vault_id);
+        if name.vault_name.is_empty()
+        {
+            names_map.remove(&key);
+            continue;
+        }
+        names_map.insert(key, VaultNameValue::new(&name.vault_name));
+    }
+}
+pub fn _vault_names_sync(user_id: Principal, update: &Vec<u8>, vnm: &VaultNamesMap) {
+    if update.is_empty() {
+        return
+    }
+
+    let names = deserialise_vault_names(update);
+    _process_vault_names(user_id, &names, vnm);
+
+}
 
 // Internal common code to process a set of deserialised spreadsheet data.
 fn _process_spreadsheet(user_id: Principal, vault_id: Principal, cells: &super::deserialiser_types::Cells, sm: &SpreadsheetMap) {
