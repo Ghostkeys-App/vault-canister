@@ -212,6 +212,14 @@ fn global_sync(vault_id: Principal, update: Vec<u8>) {
 */
 
 #[query]
+fn get_vault_names() ->vault_core::api::dev_api::VaultNames {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_vault_names(user_id, &state.vault_names_map)
+    })
+}
+
+#[query]
 fn get_spreadsheet(vault_id: Principal) -> vault_core::api::dev_api::Spreadsheet {
     let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
@@ -224,6 +232,14 @@ fn get_logins(vault_id: Principal) -> vault_core::api::dev_api::Logins {
     let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
         vault_core::api::dev_api::_get_logins(user_id, vault_id, &state.logins_map, &state.logins_columns)
+    })
+}
+
+#[query]
+fn get_secure_notes(vault_id: Principal) -> vault_core::api::dev_api::Notes {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_notes(user_id, vault_id, &state.notes_map)
     })
 }
 
