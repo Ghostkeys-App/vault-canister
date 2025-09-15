@@ -10,6 +10,7 @@ pub fn deserialise_vault_names(data: &Vec<u8>) -> VaultNames {
 }
 
 /*
+
  * Spreadsheet deserialisers
 */
 
@@ -29,6 +30,7 @@ pub fn deserialise_delete_cells(data: Vec<u8>) -> DeleteCells {
 pub fn deserialise_login_full_sync(data : Vec<u8>) -> LoginData {
     LoginData::new(data)
 }
+
 
 pub fn deserialise_login_data_sync(data : Vec<u8>) -> Cells {
     Cells::new(data)
