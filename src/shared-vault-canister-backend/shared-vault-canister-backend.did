@@ -1,31 +1,31 @@
-type FlexGridDataKey = record { col : nat32; row : nat32 };
 type GhostkeysVetKdArgs = record {
   scope : Scope;
   input : blob;
   transport_public_key : blob;
 };
+type LoginColumn = record { rows : vec record { nat8; blob }; label : blob };
+type Logins = record { columns : vec record { nat8; LoginColumn } };
 type Result = variant { Ok : blob; Err : text };
 type Scope = variant {
   PerUser : record { user : principal };
   PerOrg : record { org_id : blob };
   PerCanister;
 };
-type VaultData = record {
-  flexible_grid_columns : vec record { text; record { nat32; bool } };
-  vault_name : text;
-  secure_notes : vec record { text; text };
-  flexible_grid : vec record { FlexGridDataKey; text };
-  website_logins : vec record { text; vec record { text; text } };
-};
+type Spreadsheet = record { columns : vec record { nat8; SpreadsheetColumn } };
+type SpreadsheetColumn = record { rows : vec record { nat8; blob } };
 service : {
-  add_or_update_vault : (text, text, VaultData) -> ();
-  add_user : (principal) -> ();
-  apply_config_changes : (vec record { text; text; VaultData }) -> ();
-  clear_all_user_vaults : (text) -> ();
-  delete_vault : (text, text) -> ();
   derive_vetkd_encrypted_key : (GhostkeysVetKdArgs) -> (Result);
-  get_all_vaults_for_user : (text) -> (vec record { text; VaultData }) query;
-  get_vault : (text, text) -> (opt VaultData) query;
+  get_logins : (principal) -> (Logins) query;
+  get_spreadsheet : (principal) -> (Spreadsheet) query;
   get_vetkey_for_user : (text) -> (opt blob) query;
+  global_sync : (principal, blob) -> ();
   shared_canister_init : (principal, principal) -> ();
+  vault_login_data_deletes : (principal, blob) -> ();
+  vault_login_data_sync : (principal, blob) -> ();
+  vault_login_full_sync : (principal, blob) -> ();
+  vault_login_metadata_delete : (principal, blob) -> ();
+  vault_login_metadata_sync : (principal, blob) -> ();
+  vault_secrets_sync : (principal, blob) -> ();
+  vault_spreadsheet_deletes : (principal, blob) -> ();
+  vault_spreadsheet_sync : (principal, blob) -> ();
 }

@@ -1,4 +1,57 @@
+// Fixed-size header for vault name data. 
+pub struct VaultNameHeader {
+    pub principal_size: u8,
+    pub name_size: u16
+}
+impl VaultNameHeader {
+    pub fn new(header: Vec<u8>) -> Self {
+        let principal_size = u8::from_be_bytes([header[0]]);
+        let name_size = u16::from_be_bytes([header[1], header[2]]);
+        Self { principal_size, name_size }
+    }
+}
 
+pub struct VaultName {
+    pub header: VaultNameHeader,
+    pub vault_id: Vec<u8>,
+    pub vault_name: Vec<u8>
+}
+impl VaultName {
+    pub fn new(data: Vec<u8>) -> Self {
+        let header = VaultNameHeader::new(data[..3].to_vec());
+        let header_end : usize = 3;
+        let principal_end: usize = header_end+(header.principal_size as usize);
+        let name_end: usize = principal_end+(header.name_size as usize);
+        let vault_id: Vec<u8> = data[header_end..principal_end].to_vec();
+        let vault_name: Vec<u8> = data[principal_end..name_end].to_vec();
+        Self {
+            header,
+            vault_id,
+            vault_name
+        }
+    }
+}
+
+pub struct VaultNames {
+    pub names: Vec<VaultName>
+}
+impl VaultNames {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut names: Vec<VaultName> = Vec::new();
+        while index < data.len() {
+            let entry = VaultName::new(data[index..].to_vec());
+            index += (entry.header.name_size as usize) + (entry.header.principal_size as usize) + 3;
+            names.push(entry);
+        }
+        Self { names }
+    }
+}
+
+
+// Fixed-size header for cell data. size field is used to then extract the cell data.
+// x and y are the coordinates of the cell in 2D space and are used as part of the 
+// key in stable storage so they can be reported to the client on retrieval.
 pub struct CellHeader {
     pub size : u16,
     pub x : u8,
@@ -84,6 +137,9 @@ impl DeleteCells {
 }
 
 
+// Identifies the "name" of a group of identities, usually the website or app the login is for.
+// Thus this only needs to be unique on the x axis.
+#[repr(align(1))]
 pub struct LoginMetadataHeader {
     pub size : u16,
     pub x : u8,
@@ -117,7 +173,7 @@ impl LoginMetadata {
         while index < metadatas.len() {
             let header = LoginMetadataHeader::new(metadatas[index..index+3].to_vec());
             let size = header.size as usize;
-            index += size_of::<LoginMetadataHeader>();
+            index += 3;
             let metadata = LoginMetadataEntry::new(header, metadatas[index..index + size].to_vec());
             result.push(metadata);
             index += size;
@@ -164,6 +220,54 @@ impl DeleteMetadatas {
         }
 
         Self { metadatas : result }
+    }
+}
+
+/*
+    Secure Notes
+*/
+
+pub struct SecureNoteHeader {
+    pub label_size: u8, 
+    pub note_size: u16,
+    pub x: u8,
+}
+impl SecureNoteHeader {
+    pub fn new(header: Vec<u8>) -> Self {
+        let label_size = u8::from_be_bytes([header[0]]);
+        let note_size = u16::from_be_bytes([header[1], header[2]]);
+        let x = u8::from_be_bytes([header[3]]);
+        Self { label_size, note_size, x }
+    }
+}
+
+pub struct SecureNoteEntry {
+    pub header: SecureNoteHeader,
+    pub label: Vec<u8>,
+    pub note: Vec<u8>,
+}
+impl SecureNoteEntry {
+    pub fn new(data: Vec<u8>) -> Self {
+        let header = SecureNoteHeader::new(data[0..4].to_vec());
+        let label = data[4..4 + header.label_size as usize].to_vec();
+        let note = data[4 + header.label_size as usize..4 + header.label_size as usize + header.note_size as usize].to_vec();
+        Self { header, label, note }
+    }
+}
+
+pub struct SecureNotesData {
+    pub notes: Vec<SecureNoteEntry>,
+}
+impl SecureNotesData {
+    pub fn new(data: Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut result = Vec::new();
+        while index < data.len() {
+            let entry = SecureNoteEntry::new(data[index..].to_vec());
+            index += 4 + entry.header.label_size as usize + entry.header.note_size as usize;
+            result.push(entry);
+        }
+        Self { notes: result }
     }
 }
 

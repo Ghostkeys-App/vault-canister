@@ -1,16 +1,19 @@
 use candid::Principal;
-use ic_cdk::{call::Call, inspect_message};
+use ic_cdk::{api::msg_caller, call::Call, inspect_message};
 use ic_cdk_macros::{query, update};
+
+// import tests
+#[cfg(test)]
+mod test;
+
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs},
-        vault_api::*,
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
     },
     stable::{
         types::GeneralState,
         util::{_init_controllers, _inspect_message, maintain_status},
     },
-    vault_type::general_vault::{UserId, VaultData, VaultId, VaultKey},
 };
 
 thread_local! {
@@ -82,12 +85,12 @@ async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>,
 
     // check we haven't exceeded max users
     GENERAL_STATE.with(|state| {
-        let current_users: u64 = state.vaults_map.borrow().len();
+        let current_users: u64 = state.key_management.borrow().len();
         let mut canister_owners = state.canister_owners.borrow_mut();
         if !canister_owners.user.contains(&owner_principal) {
             if current_users == MAX_USERS - 1 {
                 // notify the factory canister that we are at capacity, but handle this new user.
-                Call::unbounded_wait(
+                let _ = Call::unbounded_wait(
                     state.canister_owners.borrow().controller,
                     "notify_canister_at_capacity",
                 );
@@ -120,57 +123,146 @@ async fn derive_vetkd_encrypted_key(args: GhostkeysVetKdArgs) -> Result<Vec<u8>,
 }
 
 #[query]
-fn get_vetkey_for_user(user_id: UserId) -> Option<Vec<u8>> {
+fn get_vetkey_for_user(user_id: String) -> Option<Vec<u8>> {
     GENERAL_STATE.with(|st| retrieve_vetkey_per_user(user_id, &st.key_management))
 }
 
-/*
-    Vault Specific Endpoints
+/* 
+    New vault-specific update endpoints 
+*/
+
+#[update]
+fn vault_names_sync(update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_names_sync(user_id, &update, &state.vault_names_map);
+    })
+}
+
+#[update] 
+fn vault_spreadsheet_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_spreadsheet_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.spreadsheet_map,
+        );
+    });
+}
+
+#[update]
+fn vault_spreadsheet_deletes(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _vault_spreadsheet_delete(user_id, vault_id, update, &state.spreadsheet_map);
+    });
+}
+
+#[update]
+fn vault_login_full_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_full_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.logins_columns,
+            &state.logins_map,
+        );
+    });
+}
+
+#[update]
+fn vault_login_metadata_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_metadata_sync(user_id, vault_id, update, &state.logins_columns, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_metadata_delete(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_metadata_delete(user_id, vault_id, update, &state.logins_columns, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_data_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_data_sync(user_id, vault_id, update, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_login_data_deletes(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _login_data_deletes(user_id, vault_id, update, &state.logins_map);
+    });
+}
+
+#[update]
+fn vault_secrets_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _secret_notes_sync(user_id, vault_id, update, &state.notes_map);
+    });
+}
+
+#[update]
+fn global_sync(vault_id: Principal, update: Vec<u8>) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _global_sync(
+            user_id,
+            vault_id,
+            update,
+            &state.logins_columns,
+            &state.logins_map,
+            &state.spreadsheet_map,
+        );
+    });
+}
+
+/* 
+    New vault-specific query endpoints
 */
 
 #[query]
-fn get_vault(user_id: UserId, vault_id: VaultId) -> Option<VaultData> {
-    GENERAL_STATE.with(|state| _get_vault(VaultKey { user_id, vault_id }, &state.vaults_map))
+fn get_vault_names() ->vault_core::api::dev_api::VaultNames {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_vault_names(user_id, &state.vault_names_map)
+    })
 }
 
 #[query]
-fn get_all_vaults_for_user(user_id: UserId) -> Vec<(VaultId, VaultData)> {
-    GENERAL_STATE.with(|state| _get_all_vaults_for_user(user_id, &state.vaults_map))
+fn get_spreadsheet(vault_id: Principal) -> vault_core::api::dev_api::Spreadsheet {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_spreadsheet(user_id, vault_id, &state.spreadsheet_map)
+    })
 }
 
-#[update]
-fn add_or_update_vault(user_id: UserId, vault_id: VaultId, vault: VaultData) {
+#[query]
+fn get_logins(vault_id: Principal) -> vault_core::api::dev_api::Logins {
+    let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
-        _add_or_update_vault(vault_id, user_id, vault, &state.vaults_map);
-    });
+        vault_core::api::dev_api::_get_logins(user_id, vault_id, &state.logins_map, &state.logins_columns)
+    })
 }
 
-#[update]
-fn delete_vault(user_id: UserId, vault_id: VaultId) {
+#[query]
+fn get_secure_notes(vault_id: Principal) -> vault_core::api::dev_api::Notes {
+    let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
-        _delete_vault(VaultKey { user_id, vault_id }, &state.vaults_map);
-    });
-}
-
-#[update]
-fn clear_all_user_vaults(user_id: UserId) {
-    GENERAL_STATE.with(|state| {
-        _clear_all_user_vaults(user_id, &state.vaults_map);
-    });
-}
-
-#[update]
-fn apply_config_changes(changes: Vec<(UserId, VaultId, VaultData)>) {
-    GENERAL_STATE.with(|state| {
-        _apply_config_changes(changes, &state.vaults_map);
-    });
-}
-
-#[update]
-fn add_user(user: Principal) {
-    GENERAL_STATE.with(|state| {
-        state.canister_owners.borrow_mut().user.push(user);
-    });
+        vault_core::api::dev_api::_get_notes(user_id, vault_id, &state.notes_map)
+    })
 }
 
 ic_cdk::export_candid!();
