@@ -1,12 +1,12 @@
 use candid::Principal;
 use ic_stable_structures::Storable;
 use crate::{
-    api::deserialiser::{deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, 
-    stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
+    api::deserialiser::{deserialise_column_data, deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, 
+    stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
     vault_type::{
         logins::LoginSiteKey, 
         secure_notes::{SecureNote, SecureNoteKey}, 
-        spreadsheet::{SpreadsheetKey, SpreadsheetValue}, 
+        spreadsheet::{ColumnData, ColumnKey, SpreadsheetKey, SpreadsheetValue}, 
         vault_names::{VaultNameKey, VaultNameValue}
     }
 };
@@ -32,6 +32,24 @@ pub fn _vault_names_sync(user_id: Principal, update: &Vec<u8>, vnm: &VaultNamesM
     let names = deserialise_vault_names(update);
     _process_vault_names(user_id, &names, vnm);
 
+}
+
+fn _process_spreadsheet_columns(user_id: Principal, vault_id: Principal, columns: &super::deserialiser_types::SpreadsheetColumns, sc: &ColumnsInfo) {
+    let mut sc = sc.borrow_mut();
+    for column in columns.columns.iter() {
+        let key = ColumnKey::new(user_id, vault_id, column.header.x);
+        let value = ColumnData::new(if column.header.hidden > 0 { true } else { false }, column.name.clone());
+        sc.insert(key, value);
+    }
+}
+
+pub fn _vault_spreadsheet_columns_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, sc: &ColumnsInfo) {
+    if update.is_empty() {
+        return;
+    }
+
+    let column_data = deserialise_column_data(&update);
+    _process_spreadsheet_columns(user_id, vault_id, &column_data, sc);
 }
 
 // Internal common code to process a set of deserialised spreadsheet data.

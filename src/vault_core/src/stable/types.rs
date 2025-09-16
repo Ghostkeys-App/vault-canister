@@ -7,7 +7,7 @@ use ic_stable_structures::{
 };
 
 use crate::vault_type::{
-    logins::LoginSiteKey, secure_notes::{SecureNote, SecureNoteKey}, spreadsheet::{SpreadsheetKey, SpreadsheetValue}, vault_names::{VaultNameKey, VaultNameValue}
+    logins::LoginSiteKey, secure_notes::{SecureNote, SecureNoteKey}, spreadsheet::{ColumnData, ColumnKey, SpreadsheetKey, SpreadsheetValue}, vault_names::{VaultNameKey, VaultNameValue}
 };
 
 // Stable memory for vaults
@@ -17,6 +17,7 @@ pub type VaultNamesMap = RefCell<StableBTreeMap<VaultNameKey, VaultNameValue, Me
 
 // Stable memory for spreadsheets.
 pub type SpreadsheetMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
+pub type ColumnsInfo = RefCell<StableBTreeMap<ColumnKey, ColumnData, Memory>>;
 
 // Stable memory for login data and metadata.
 pub type LoginsMap = RefCell<StableBTreeMap<SpreadsheetKey, SpreadsheetValue, Memory>>;
@@ -40,6 +41,7 @@ pub struct GeneralState {
     pub memory_manager: MemoryManager<DefaultMemoryImpl>,
     pub canister_owners: CanisterOwnersState,
     pub key_management: KeyManagementState,
+    pub spreadsheet_columns: ColumnsInfo,
     pub spreadsheet_map: SpreadsheetMap,
     pub logins_map: LoginsMap,
     pub logins_columns: LoginsColumns,

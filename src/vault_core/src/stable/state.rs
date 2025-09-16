@@ -13,15 +13,17 @@ impl GeneralState {
             user: Vec::default(),
         });
         let key_management = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(1))));
-        let spreadsheet_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(2))));
-        let logins_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(3))));
-        let logins_columns = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(4))));
-        let notes_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(5))));
-        let vault_names_map =  RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(6))));
+        let spreadsheet_columns = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(2))));
+        let spreadsheet_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(3))));
+        let logins_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(4))));
+        let logins_columns = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(5))));
+        let notes_map = RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(6))));
+        let vault_names_map =  RefCell::new(StableBTreeMap::init(memory_manager.get(MemoryId::new(7))));
         Self {
             memory_manager,
             canister_owners,
             key_management,
+            spreadsheet_columns,
             spreadsheet_map,
             logins_map,
             logins_columns,

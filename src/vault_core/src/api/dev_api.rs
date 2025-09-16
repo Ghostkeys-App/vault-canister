@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use ic_stable_structures::Storable;
 use candid::{Principal, CandidType, Deserialize};
 
-use crate::stable::types::{LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap};
+use crate::{stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, vault_type::spreadsheet::ColumnData};
 
 /* 
     Vault names devapi structures
@@ -32,6 +32,29 @@ pub fn _get_vault_names(user_id: Principal, vnm: &VaultNamesMap) -> VaultNames {
 /* 
     Spreadsheet devapi structures.
 */
+
+pub type FlexGridColumns = HashMap<u8, (Vec<u8>, bool)>;
+pub fn _get_columns_info(user_id: Principal, vault_id: Principal, sc: &ColumnsInfo) -> FlexGridColumns {
+    let sc = sc.borrow();
+    let mut columns : FlexGridColumns = HashMap::new();
+
+    let compare_principals: Vec<u8> = {
+        let mut principals = Vec::new();
+        principals.extend(user_id.to_bytes().iter());
+        principals.extend(vault_id.to_bytes().iter());
+        principals
+    };
+
+    sc.iter().for_each(|entry| {
+        let (key, value) = entry.into_pair();
+        if key.principals_match(&compare_principals) {
+            columns.entry(key.x).or_insert_with(|| (value.name, value.hidden ));
+        }
+    });
+
+    columns
+}
+
 #[derive(CandidType, Deserialize)]
 pub struct SpreadsheetColumn {
     pub rows: HashMap<u8, Vec<u8>>, // key is y

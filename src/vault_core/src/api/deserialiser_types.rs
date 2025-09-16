@@ -136,6 +136,53 @@ impl DeleteCells {
     }
 }
 
+// Identifies the name and other metadata (such as show/hide status) of a spreadsheet column
+pub struct SpreadsheetColumnHeader {
+    pub name_size : u16,
+    pub hidden : u8,
+    pub x: u8
+}
+impl SpreadsheetColumnHeader {
+    pub fn new(header : &Vec<u8>) -> Self {
+        let name_size = u16::from_be_bytes([header[0], header[1]]);
+        let hidden = u8::from_be_bytes([header[2]]);
+        let x = u8::from_be_bytes([header[3]]);
+        Self { name_size, hidden, x }
+    }
+}
+
+pub struct SpreadsheetColumnEntry {
+    pub header: SpreadsheetColumnHeader,
+    pub name: Vec<u8>
+}
+impl SpreadsheetColumnEntry {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let header = SpreadsheetColumnHeader::new(data);
+        Self {
+            name: data[4..4+(header.name_size as usize)].to_vec(),
+            header
+        }
+    }
+}
+
+pub struct SpreadsheetColumns {
+    pub columns: Vec<SpreadsheetColumnEntry>
+}
+impl SpreadsheetColumns {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut result = Vec::new();
+
+        while index < data.len() {
+            let entry = SpreadsheetColumnEntry::new(&data[index..].to_vec());
+            index += 4 + (entry.header.name_size as usize);
+            result.push(entry);
+        }
+
+        Self { columns: result }
+    }
+}
+
 
 // Identifies the "name" of a group of identities, usually the website or app the login is for.
 // Thus this only needs to be unique on the x axis.

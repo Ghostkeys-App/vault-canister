@@ -1,4 +1,4 @@
-use crate::api::deserialiser_types::{SecureNotesData, VaultNames};
+use crate::api::deserialiser_types::{SecureNotesData, SpreadsheetColumns, VaultNames};
 
 use super::deserialiser_types::{Cells, DeleteCells, LoginData, LoginMetadata, GlobalSyncData};
 
@@ -20,6 +20,10 @@ pub fn deserialise_spreadsheet(data: Vec<u8>) -> Cells {
 
 pub fn deserialise_delete_cells(data: Vec<u8>) -> DeleteCells {
     DeleteCells::new(data)
+}
+
+pub fn deserialise_column_data(data: &Vec<u8>) -> SpreadsheetColumns {
+    SpreadsheetColumns::new(data)
 }
 
 
