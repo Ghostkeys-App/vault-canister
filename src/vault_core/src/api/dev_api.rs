@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use ic_stable_structures::Storable;
 use candid::{Principal, CandidType, Deserialize};
 
-use crate::{stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, vault_type::spreadsheet::ColumnData};
+use crate::stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap};
 
 /* 
     Vault names devapi structures
@@ -97,9 +97,15 @@ pub fn _get_spreadsheet(user_id: Principal, vault_id: Principal, sm: &Spreadshee
 */
 
 #[derive(CandidType, Deserialize)]
+pub struct LoginCell {
+    pub username: Vec<u8>,
+    pub password: Vec<u8>
+}
+
+#[derive(CandidType, Deserialize)]
 pub struct LoginColumn {
     pub label : Vec<u8>,
-    pub rows: HashMap<u8, Vec<u8>>, // key is y
+    pub rows: HashMap<u8, LoginCell>, // key is y
 }
 
 #[derive(CandidType, Deserialize)]
@@ -139,7 +145,8 @@ pub fn _get_logins(user_id: Principal, vault_id: Principal, lm: &LoginsMap, lc: 
                 .entry(key.x)
                 .or_insert_with(|| LoginColumn { label: column_labels.get(&key.x).cloned().unwrap_or_default(), rows: HashMap::new() })
                 .rows
-                .insert(key.y, entry.value().data.clone());
+                .entry(key.y)
+                .or_insert_with(|| LoginCell { username: entry.value().username.clone(), password: entry.value().password.clone() });
         }
     });
 

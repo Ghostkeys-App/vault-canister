@@ -6,7 +6,7 @@ use crate::{
     vault_type::{
         logins::LoginSiteKey, 
         secure_notes::{SecureNote, SecureNoteKey}, 
-        spreadsheet::{ColumnData, ColumnKey, SpreadsheetKey, SpreadsheetValue}, 
+        spreadsheet::{ColumnData, ColumnKey, LoginValue, SpreadsheetKey, SpreadsheetValue}, 
         vault_names::{VaultNameKey, VaultNameValue}
     }
 };
@@ -136,16 +136,17 @@ fn _process_metadata(user_id: Principal, vault_id: Principal, metadata: &super::
     }
 }
 
+
 // Internal common code to process a set of deserialised login identity data.
-fn _process_login_data(user_id: Principal, vault_id: Principal, cells: &super::deserialiser_types::Cells, lm: &LoginsMap) {
+fn _process_login_data(user_id: Principal, vault_id: Principal, login_data: &super::deserialiser_types::LoginDataEntries, lm: &LoginsMap) {
     let mut logins = lm.borrow_mut();
-    for cell in cells.cells.iter() {
-        let key = SpreadsheetKey::new(user_id, vault_id, cell.header.x, cell.header.y);
-        if cell.data.is_empty() {
+    for login in login_data.logins.iter() {
+        let key = SpreadsheetKey::new(user_id, vault_id, login.header.x, login.header.y);
+        if login.username.is_empty() {
             logins.remove(&key);
             continue;
         }
-        logins.insert(key, SpreadsheetValue::new(cell.data.clone()));
+        logins.insert(key, LoginValue::new(login.username.clone(), login.password.clone()));
     }
 }
 
@@ -155,10 +156,10 @@ pub fn _login_full_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>
         return;
     }
 
-    let login_data = deserialise_login_full_sync(update);
+    let login_data = deserialise_login_full_sync(&update);
     
     _process_metadata(user_id, vault_id, &login_data.metadata, lc, lm);
-    _process_login_data(user_id, vault_id, &login_data.cells, lm);
+    _process_login_data(user_id, vault_id, &login_data.logins, lm);
 }
 
 // Interface function to deserialise and process a metadata-only sync of login data
@@ -196,7 +197,7 @@ pub fn _login_data_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>
         return;
     }
 
-    let login_data = deserialise_login_data_sync(update);
+    let login_data = deserialise_login_data_sync(&update);
     
     _process_login_data(user_id, vault_id, &login_data, lm);
 }
@@ -248,7 +249,7 @@ pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, lc
     }
     let global_data = deserialise_global_sync(update);
 
-    _process_login_data(user_id, vault_id, &global_data.logins.cells, lm);
+    _process_login_data(user_id, vault_id, &global_data.logins.logins, lm);
     _process_metadata(user_id, vault_id, &global_data.logins.metadata, lc, lm);
     _process_spreadsheet(user_id, vault_id, &global_data.spreadsheet, sm);
 }
