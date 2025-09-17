@@ -8,7 +8,7 @@ mod test;
 
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_columns_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_delete_vault, _global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_columns_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
     },
     stable::{
         types::GeneralState,
@@ -242,6 +242,14 @@ fn global_sync(vault_id: Principal, update: Vec<u8>) {
     });
 }
 
+#[update]
+fn delete_vault(vault_id: Principal) {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _delete_vault(user_id, vault_id, state);
+    })
+}
+
 /* 
     New vault-specific query endpoints
 */
@@ -251,6 +259,14 @@ fn get_vault_names() ->vault_core::api::dev_api::VaultNames {
     let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
         vault_core::api::dev_api::_get_vault_names(user_id, &state.vault_names_map)
+    })
+}
+
+#[query]
+fn get_vault_name(vault_id: Principal) -> Vec<u8> {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_vault_name(user_id, vault_id, &state.vault_names_map)
     })
 }
 

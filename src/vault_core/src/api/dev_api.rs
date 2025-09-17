@@ -29,6 +29,23 @@ pub fn _get_vault_names(user_id: Principal, vnm: &VaultNamesMap) -> VaultNames {
     VaultNames { names:  names_map }
 }
 
+pub fn _get_vault_name(user_id: Principal, vault_id: Principal, vnm: &VaultNamesMap) -> Vec<u8> {
+    let compare_principals: Vec<u8> = {
+        let mut principals = Vec::new();
+        principals.extend(user_id.to_bytes().iter());
+        principals.extend(vault_id.to_bytes().iter());
+        principals
+    };
+    for entry in vnm.borrow().iter() {
+        if entry.key().principals_match(&compare_principals) {
+            return entry.value().name;
+        }
+    }
+    return Vec::new();
+}
+
+
+
 /* 
     Spreadsheet devapi structures.
 */
