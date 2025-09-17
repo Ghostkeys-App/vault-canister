@@ -136,6 +136,53 @@ impl DeleteCells {
     }
 }
 
+// Identifies the name and other metadata (such as show/hide status) of a spreadsheet column
+pub struct SpreadsheetColumnHeader {
+    pub name_size : u16,
+    pub hidden : u8,
+    pub x: u8
+}
+impl SpreadsheetColumnHeader {
+    pub fn new(header : &Vec<u8>) -> Self {
+        let name_size = u16::from_be_bytes([header[0], header[1]]);
+        let hidden = u8::from_be_bytes([header[2]]);
+        let x = u8::from_be_bytes([header[3]]);
+        Self { name_size, hidden, x }
+    }
+}
+
+pub struct SpreadsheetColumnEntry {
+    pub header: SpreadsheetColumnHeader,
+    pub name: Vec<u8>
+}
+impl SpreadsheetColumnEntry {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let header = SpreadsheetColumnHeader::new(data);
+        Self {
+            name: data[4..4+(header.name_size as usize)].to_vec(),
+            header
+        }
+    }
+}
+
+pub struct SpreadsheetColumns {
+    pub columns: Vec<SpreadsheetColumnEntry>
+}
+impl SpreadsheetColumns {
+    pub fn new(data: &Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut result = Vec::new();
+
+        while index < data.len() {
+            let entry = SpreadsheetColumnEntry::new(&data[index..].to_vec());
+            index += 4 + (entry.header.name_size as usize);
+            result.push(entry);
+        }
+
+        Self { columns: result }
+    }
+}
+
 
 // Identifies the "name" of a group of identities, usually the website or app the login is for.
 // Thus this only needs to be unique on the x axis.
@@ -182,18 +229,81 @@ impl LoginMetadata {
     }
 }
 
+pub struct LoginEntryHeader {
+    pub x: u8,
+    pub y: u8,
+    pub uname_len : u16,
+    pub pwd_len : u16,
+}
+impl LoginEntryHeader {
+    pub fn new (data: &Vec<u8>) -> Self {
+        let x = u8::from_be_bytes([data[0]]);
+        let y = u8::from_be_bytes([data[1]]);
+        let uname_len = u16::from_be_bytes([data[2], data[3]]);
+        let pwd_len = u16::from_be_bytes([data[4], data[5]]);
+        Self {
+            x,
+            y,
+            uname_len,
+            pwd_len
+        }
+    }
+}
+
+pub struct LoginEntry {
+    pub header: LoginEntryHeader,
+    pub username: Vec<u8>,
+    pub password: Vec<u8>,
+}
+impl LoginEntry {
+    pub fn new ( data: &Vec<u8>) -> Self {
+        let header = LoginEntryHeader::new(data);
+        let mut index = 6;
+        let username = data[index..6+header.uname_len as usize].to_vec();
+        index += header.uname_len as usize;
+        let password = data[index..index + header.pwd_len as usize].to_vec();
+        Self {
+            header,
+            username,
+            password
+        }
+    }
+}
+
+pub struct LoginDataEntries {
+    pub logins : Vec<LoginEntry>
+}
+impl LoginDataEntries {
+    pub fn new(logindata: &Vec<u8>) -> Self {
+        let mut index = 0;
+        let mut logins = Vec::new();
+
+        while index < logindata.len() {
+            let login = LoginEntry::new(&logindata[index..].to_vec());
+            index += 6 + (login.header.pwd_len as usize) + (login.header.uname_len as usize);
+            logins.push(login);
+        }
+
+        Self {
+            logins
+        }
+    }
+}
+
 // Describes the full login data, including metadata and entries.
 pub struct LoginData {
     pub metadata : LoginMetadata,
-    pub cells : Cells
+    pub logins : LoginDataEntries
 }
 impl LoginData {
-    pub fn new(logindata : Vec<u8>) -> Self {
+    pub fn new(logindata : &Vec<u8>) -> Self {
         // First 5 bytes is metadata size
         let metadata_size = u64::from_be_bytes([0, 0, 0, logindata[0], logindata[1], logindata[2], logindata[3], logindata[4]]) as usize;
         let metadata = LoginMetadata::new(logindata[4..4 + metadata_size].to_vec());
-        let cells = Cells::new(logindata[4 + metadata_size..].to_vec());
-        Self { metadata, cells }
+        let index = 4 + metadata_size;
+        let logins = LoginDataEntries::new(&logindata[index..].to_vec());
+
+        Self { metadata, logins }
     }
 }
 
@@ -281,7 +391,7 @@ impl GlobalSyncData {
         let spreadsheet_size = u64::from_be_bytes([0, 0, 0, data[0], data[1], data[2], data[3], data[5]]) as usize;
         let logins_size = data.len() - 5 - spreadsheet_size;
         let spreadsheet = Cells::new(data[5..5 + spreadsheet_size].to_vec());
-        let logins = LoginData::new(data[5 + spreadsheet_size..5 + spreadsheet_size + logins_size].to_vec());
+        let logins = LoginData::new(&data[5 + spreadsheet_size..5 + spreadsheet_size + logins_size].to_vec());
         Self { logins, spreadsheet }
     }
 }

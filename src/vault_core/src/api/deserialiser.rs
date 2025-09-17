@@ -1,4 +1,4 @@
-use crate::api::deserialiser_types::{SecureNotesData, VaultNames};
+use crate::api::deserialiser_types::{LoginDataEntries, SecureNotesData, SpreadsheetColumns, VaultNames};
 
 use super::deserialiser_types::{Cells, DeleteCells, LoginData, LoginMetadata, GlobalSyncData};
 
@@ -22,18 +22,22 @@ pub fn deserialise_delete_cells(data: Vec<u8>) -> DeleteCells {
     DeleteCells::new(data)
 }
 
+pub fn deserialise_column_data(data: &Vec<u8>) -> SpreadsheetColumns {
+    SpreadsheetColumns::new(data)
+}
+
 
 /*
  * Login deserialisers
 */
 
-pub fn deserialise_login_full_sync(data : Vec<u8>) -> LoginData {
+pub fn deserialise_login_full_sync(data : &Vec<u8>) -> LoginData {
     LoginData::new(data)
 }
 
 
-pub fn deserialise_login_data_sync(data : Vec<u8>) -> Cells {
-    Cells::new(data)
+pub fn deserialise_login_data_sync(data : &Vec<u8>) -> LoginDataEntries {
+    LoginDataEntries::new(data)
 }
 
 pub fn deserialise_login_metadata(data : Vec<u8>) -> LoginMetadata {
