@@ -225,7 +225,7 @@ fn _process_notes_data(user_id: Principal, vault_id: Principal, notes_data: &sup
             index: note.header.x,
             principals
         };
-        if note.note.is_empty()
+        if note.label.is_empty()
         {
             nm.remove(&key);
             continue;
