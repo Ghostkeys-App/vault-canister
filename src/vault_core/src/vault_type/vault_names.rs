@@ -22,6 +22,9 @@ impl VaultNameKey {
         }
         return true;
     }
+    pub fn principals_match(&self, principals: &Vec<u8>) -> bool {
+        self.principals.len() == principals.len() && self.principals == *principals
+    }
 }
 impl Storable for VaultNameKey {
     const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Bounded { max_size: 512, is_fixed_size: false };

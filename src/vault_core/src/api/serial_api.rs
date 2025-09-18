@@ -2,7 +2,7 @@ use candid::Principal;
 use ic_stable_structures::Storable;
 use crate::{
     api::deserialiser::{deserialise_column_data, deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, 
-    stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
+    stable::types::{ColumnsInfo, GeneralState, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
     vault_type::{
         logins::LoginSiteKey, 
         secure_notes::{SecureNote, SecureNoteKey}, 
@@ -252,4 +252,67 @@ pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, lc
     _process_login_data(user_id, vault_id, &global_data.logins.logins, lm);
     _process_metadata(user_id, vault_id, &global_data.logins.metadata, lc, lm);
     _process_spreadsheet(user_id, vault_id, &global_data.spreadsheet, sm);
+}
+
+pub fn _delete_vault(user_id: Principal, vault_id: Principal, state: &GeneralState) {
+    let principals = vec![user_id.into_bytes(), vault_id.into_bytes()].concat();
+    let mut lc = state.logins_columns.borrow_mut();
+    let keys_to_remove: Vec<_> = lc.iter()
+        .filter(|entry| entry.key().principals_match(&principals))
+        .map(|entry| entry.key().clone())
+        .collect();
+
+    for key in keys_to_remove {
+        lc.remove(&key);
+    }
+    
+    // Remove from spreadsheet_columns
+    let mut sc = state.spreadsheet_columns.borrow_mut();
+    let keys_to_remove: Vec<_> = sc.iter()
+        .filter(|entry| entry.key().principals_match(&principals))
+        .map(|entry| entry.key().clone())
+        .collect();
+    for key in keys_to_remove {
+        sc.remove(&key);
+    }
+
+    // Remove from spreadsheet_map
+    let mut sm = state.spreadsheet_map.borrow_mut();
+    let keys_to_remove: Vec<_> = sm.iter()
+        .filter(|entry| entry.key().principals_match(&principals))
+        .map(|entry| entry.key().clone())
+        .collect();
+    for key in keys_to_remove {
+        sm.remove(&key);
+    }
+
+    // Remove from logins_map
+    let mut lm = state.logins_map.borrow_mut();
+    let keys_to_remove: Vec<_> = lm.iter()
+        .filter(|entry| entry.key().principals_match(&principals))
+        .map(|entry| entry.key().clone())
+        .collect();
+    for key in keys_to_remove {
+        lm.remove(&key);
+    }
+
+    // Remove from notes_map
+    let mut nm = state.notes_map.borrow_mut();
+    let keys_to_remove: Vec<_> = nm.iter()
+        .filter(|entry| entry.key().principals == principals)
+        .map(|entry| entry.key().clone())
+        .collect();
+    for key in keys_to_remove {
+        nm.remove(&key);
+    }
+
+    // Remove from vault_names_map
+    let mut vnm = state.vault_names_map.borrow_mut();
+    let keys_to_remove: Vec<_> = vnm.iter()
+        .filter(|entry| entry.key().principals == principals)
+        .map(|entry| entry.key().clone())
+        .collect();
+    for key in keys_to_remove {
+        vnm.remove(&key);
+    }
 }
