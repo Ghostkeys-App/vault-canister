@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use ic_stable_structures::Storable;
 use candid::{Principal, CandidType, Deserialize};
 
-use crate::stable::types::{ColumnsInfo, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap};
+use crate::{stable::types::{ColumnsInfo, GeneralState, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, vault_type::vault_names};
 
 /* 
     Vault names devapi structures
@@ -205,4 +205,49 @@ pub fn _get_notes(user_id: Principal, vault_id: Principal, nm: &NotesMap) -> Not
     });
 
     notes
+}
+
+/*
+    Global fetches
+*/
+#[derive(CandidType, Deserialize)]
+pub struct VaultData {
+    pub vault_name: Vec<u8>,
+    pub spreadsheet_columns: FlexGridColumns,
+    pub spreadsheet: Spreadsheet,
+    pub logins: Logins,
+    pub notes: Notes,
+}
+
+pub fn _get_vault(vault_name: &Vec<u8>, user_id: Principal, vault_id: Principal, state: &GeneralState) -> VaultData {
+    let spreadsheet_columns = _get_columns_info(user_id, vault_id, &state.spreadsheet_columns);
+    let spreadsheet = _get_spreadsheet(user_id, vault_id, &state.spreadsheet_map);
+    let logins = _get_logins(user_id, vault_id, &state.logins_map, &state.logins_columns);
+    let notes = _get_notes(user_id, vault_id, &state.notes_map);
+
+    VaultData {
+        vault_name: vault_name.to_vec(),
+        spreadsheet_columns,
+        spreadsheet,
+        logins,
+        notes
+    }
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct UserVaults {
+    pub vaults: HashMap<Vec<u8>, VaultData>
+}
+
+pub fn _get_user_vaults(user_id: Principal, state: &GeneralState) -> UserVaults {
+    let vault_names = _get_vault_names(user_id, &state.vault_names_map);
+    let mut vaults = HashMap::new();
+
+    for vault in vault_names.names.iter() {
+        let (vault_id, vault_name) = vault;
+        let vault_data = _get_vault(vault_name, user_id, Principal::from_bytes(vault_id.to_bytes()), state);
+        vaults.insert(vault_id.to_vec(), vault_data);
+    }
+
+    UserVaults { vaults }
 }

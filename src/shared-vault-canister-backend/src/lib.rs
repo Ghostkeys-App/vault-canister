@@ -302,4 +302,21 @@ fn get_secure_notes(vault_id: Principal) -> vault_core::api::dev_api::Notes {
     })
 }
 
+#[query]
+fn get_user_vault(vault_id: Principal) -> vault_core::api::dev_api::VaultData {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        let vault_name = vault_core::api::dev_api::_get_vault_name(user_id, vault_id, &state.vault_names_map);
+        vault_core::api::dev_api::_get_vault(&vault_name, user_id, vault_id, &state)
+    })
+}
+
+#[query]
+fn get_all_user_vaults() -> vault_core::api::dev_api::UserVaults {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        vault_core::api::dev_api::_get_user_vaults(user_id, state)
+    })
+}
+
 ic_cdk::export_candid!();
