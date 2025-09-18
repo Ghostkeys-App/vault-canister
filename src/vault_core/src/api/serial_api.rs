@@ -243,15 +243,17 @@ pub fn _secret_notes_sync(user_id: Principal, vault_id: Principal, update: Vec<u
     _process_notes_data(user_id, vault_id, &notes, nm);
 }
 
-pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, lc: &LoginsColumns, lm: &LoginsMap, sm: &SpreadsheetMap) {
+pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, state: &GeneralState) {
     if update.is_empty() {
         return;
     }
     let global_data = deserialise_global_sync(update);
 
-    _process_login_data(user_id, vault_id, &global_data.logins.cells, lm);
-    _process_metadata(user_id, vault_id, &global_data.logins.metadata, lc, lm);
-    _process_spreadsheet(user_id, vault_id, &global_data.spreadsheet, sm);
+    _process_login_data(user_id, vault_id, &global_data.logins.cells, &state.logins_map);
+    _process_notes_data(user_id, vault_id, &global_data.secure_notes, &state.notes_map);
+    _process_metadata(user_id, vault_id, &global_data.logins.metadata, &state.logins_columns, &state.logins_map);
+    _process_spreadsheet(user_id, vault_id, &global_data.spreadsheet, &state.spreadsheet_map);
+    _process_spreadsheet_columns(user_id, vault_id, &global_data.spreadsheet_columns, &state.spreadsheet_columns);
 }
 
 pub fn _delete_vault(user_id: Principal, vault_id: Principal, state: &GeneralState) {

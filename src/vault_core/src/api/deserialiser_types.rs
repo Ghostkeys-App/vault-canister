@@ -321,15 +321,28 @@ impl SecureNotesData {
 
 // Describes a global sync, containing complete login data and spreadsheet data.
 pub struct GlobalSyncData {
-    pub logins : LoginData,
     pub spreadsheet : Cells,
+    pub spreadsheet_columns: SpreadsheetColumns,
+    pub secure_notes: SecureNotesData,
+    pub logins : LoginData,
 }
 impl GlobalSyncData {
     pub fn new(data : Vec<u8>) -> Self {
-        let spreadsheet_size = u64::from_be_bytes([0, 0, 0, data[0], data[1], data[2], data[3], data[5]]) as usize;
-        let logins_size = data.len() - 5 - spreadsheet_size;
-        let spreadsheet = Cells::new(data[5..5 + spreadsheet_size].to_vec());
-        let logins = LoginData::new(&data[5 + spreadsheet_size..5 + spreadsheet_size + logins_size].to_vec());
-        Self { logins, spreadsheet }
+        let spreadsheet_size = u64::from_be_bytes([0, 0, 0, data[0], data[1], data[2], data[3], data[4]]) as usize;
+        let columns_size = u64::from_be_bytes([0, 0, 0, data[5], data[6], data[7], data[8], data[9]]) as usize;
+        let notes_size = u64::from_be_bytes([0, 0, 0, data[10], data[11], data[12], data[13], data[14]]) as usize;
+        let mut index = 5 + 5 + 5;
+
+        let spreadsheet = Cells::new(data[index..index + spreadsheet_size].to_vec());
+        index += spreadsheet_size;
+
+        let spreadsheet_columns = SpreadsheetColumns::new(&data[index..index + columns_size].to_vec());
+        index += columns_size;
+
+        let secure_notes = SecureNotesData::new(data[index..index + notes_size].to_vec());
+        index += notes_size;
+
+        let logins = LoginData::new(&data[index..].to_vec());
+        Self { spreadsheet, spreadsheet_columns, secure_notes, logins }
     }
 }
