@@ -30,7 +30,7 @@ impl SpreadsheetKey {
 }
 impl Storable for SpreadsheetKey {
     const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Bounded {
-        max_size: 50,
+        max_size: 100,
         is_fixed_size: false,
     };
 
@@ -141,7 +141,7 @@ impl ColumnKey {
 }
 impl Storable for ColumnKey {
     const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Bounded {
-        max_size: 50,
+        max_size: 100,
         is_fixed_size: false,
     };
 
