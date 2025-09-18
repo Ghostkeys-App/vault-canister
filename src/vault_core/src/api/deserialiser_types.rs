@@ -239,8 +239,8 @@ impl LoginData {
     pub fn new(logindata : &Vec<u8>) -> Self {
         // First 5 bytes is metadata size
         let metadata_size = u64::from_be_bytes([0, 0, 0, logindata[0], logindata[1], logindata[2], logindata[3], logindata[4]]) as usize;
-        let metadata = LoginMetadata::new(logindata[4..4 + metadata_size].to_vec());
-        let cells = Cells::new(logindata[4 + metadata_size..].to_vec());
+        let metadata = LoginMetadata::new(logindata[5..5 + metadata_size].to_vec());
+        let cells = Cells::new(logindata[5 + metadata_size..].to_vec());
         Self { metadata, cells }
     }
 }

@@ -1,8 +1,9 @@
+use core::sync;
 use std::cell::RefCell;
 
 use candid::Principal;
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, DefaultMemoryImpl, StableBTreeMap, Storable};
-use vault_core::{api::{dev_api::{_get_logins, _get_notes}, serial_api::{_login_data_sync, _login_metadata_sync, _secret_notes_sync, _vault_names_sync}}, vault_type::spreadsheet::SpreadsheetKey};
+use vault_core::{api::{dev_api::{_get_logins, _get_notes, _get_vault}, serial_api::{_global_sync, _login_data_sync, _login_metadata_sync, _secret_notes_sync, _vault_names_sync}}, stable::types::GeneralState, vault_type::spreadsheet::SpreadsheetKey};
 use vault_core::api::dev_api::_get_vault_names;
 
 fn some_user_id() -> Principal {
@@ -241,4 +242,42 @@ pub fn test_get_notes() {
     let get_notes = _get_notes(user_id.clone(), vault_id.clone(), &notes);
 
     assert_eq!(get_notes.notes.len(), 2);
+}
+
+#[test]
+pub fn test_global_sync() {
+    let user_id = some_user_id();
+    let vault_id = some_vault_id();
+    let spreadsheet_data = some_spreadsheet_data();
+    let columns_data: Vec<u8> = Vec::new();
+    let notes_data = some_notes_data();
+    let logins_metadata = some_login_metadata();
+    let logins_data = some_login_data();
+
+    let mut logins_full: Vec<u8> = Vec::new();
+    let meta_size = logins_metadata.len().to_be_bytes();
+    logins_full.extend(meta_size[3..].iter());
+    logins_full.extend(logins_metadata);
+    logins_full.extend(logins_data);
+
+    let mut sync_data: Vec<u8> = Vec::new();
+    let ss_size = spreadsheet_data.len().to_be_bytes();
+    let sc_size = columns_data.len().to_be_bytes();
+    let sn_size = notes_data.len().to_be_bytes();
+
+    sync_data.extend(ss_size[3..].iter());
+    sync_data.extend(sc_size[3..].iter());
+    sync_data.extend(sn_size[3..].iter());
+    sync_data.extend(spreadsheet_data.iter());
+    sync_data.extend(columns_data.iter());
+    sync_data.extend(notes_data.iter());
+    sync_data.extend(logins_full.iter());
+
+    let state = GeneralState::init();
+
+    _global_sync(user_id, vault_id, sync_data, &state);
+
+    let get_all = _get_vault(&Vec::new(), user_id, vault_id, &state);
+
+    assert!(get_all.logins.columns.len() > 0);
 }
