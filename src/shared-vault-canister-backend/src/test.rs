@@ -36,6 +36,12 @@ fn some_more_spreadsheet_data() -> Vec<u8> {
     ]
 }
 
+fn some_columns_data() -> Vec<u8> {
+    vec![
+        0, 3, 0, 0, 97, 98, 99, 0, 4, 1, 1, 100, 101, 102, 103
+    ]
+}
+
 fn some_login_data() -> Vec<u8> {
     vec![
         0x00, 0x0F, 0x00, 0x01, 0x74, 0x68, 0x65, 0x20, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x62, 0x72, 0x6F, 0x77, 0x6E, 
@@ -249,7 +255,7 @@ pub fn test_global_sync() {
     let user_id = some_user_id();
     let vault_id = some_vault_id();
     let spreadsheet_data = some_spreadsheet_data();
-    let columns_data: Vec<u8> = Vec::new();
+    let columns_data= some_columns_data();
     let notes_data = some_notes_data();
     let logins_metadata = some_login_metadata();
     let logins_data = some_login_data();
