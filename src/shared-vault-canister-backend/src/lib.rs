@@ -312,8 +312,7 @@ fn get_user_vault(vault_id: Principal) -> vault_core::api::dev_api::VaultData {
 }
 
 #[query]
-fn get_all_user_vaults() -> vault_core::api::dev_api::UserVaults {
-    let user_id = msg_caller();
+fn get_all_user_vaults(user_id: Principal) -> vault_core::api::dev_api::UserVaults {
     GENERAL_STATE.with(|state| {
         vault_core::api::dev_api::_get_user_vaults(user_id, state)
     })
