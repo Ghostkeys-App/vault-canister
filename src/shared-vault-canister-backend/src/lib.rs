@@ -235,9 +235,7 @@ fn global_sync(vault_id: Principal, update: Vec<u8>) {
             user_id,
             vault_id,
             update,
-            &state.logins_columns,
-            &state.logins_map,
-            &state.spreadsheet_map,
+            &state
         );
     });
 }
