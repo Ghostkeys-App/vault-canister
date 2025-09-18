@@ -121,50 +121,6 @@ impl Storable for SpreadsheetValue {
     }
 }
 
-pub struct LoginValue {
-    pub username: Vec<u8>,
-    pub password: Vec<u8>
-}
-impl LoginValue {
-    pub fn new(username: Vec<u8>, password: Vec<u8>) -> Self {
-        Self {
-            username,
-            password
-        }
-    }
-}
-impl Storable for LoginValue {
-    const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Unbounded;
-
-    fn to_bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        let uname_len: u16 = self.username.len() as u16;
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.extend(uname_len.to_be_bytes());
-        bytes.extend(self.username.iter());
-        bytes.extend(self.password.iter());
-        bytes.into()
-    }
-
-    fn into_bytes(self) -> Vec<u8> {
-        let uname_len: u16 = self.username.len() as u16;
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.extend(uname_len.to_be_bytes());
-        bytes.extend(self.username.iter());
-        bytes.extend(self.password.iter());
-        bytes
-    }
-
-    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
-        let uname_len = u16::from_be_bytes([bytes[0], bytes[1]]);
-        let username = bytes[2..2 + uname_len as usize].to_vec();
-        let password = bytes[2 + uname_len as usize..].to_vec();
-        Self {
-            username,
-            password
-        }
-    }
-}
-
 pub struct ColumnKey {
     pub principals: Vec<u8>,
     pub x: u8
