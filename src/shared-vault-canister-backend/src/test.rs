@@ -248,6 +248,14 @@ pub fn test_get_notes() {
     let get_notes = _get_notes(user_id.clone(), vault_id.clone(), &notes);
 
     assert_eq!(get_notes.notes.len(), 2);
+    let note_1 = String::from_utf8(get_notes.notes.get(&(0 as u8)).unwrap().note.clone()).unwrap();
+    let label_1 = String::from_utf8(get_notes.notes.get(&(0 as u8)).unwrap().label.clone()).unwrap();
+    let note_2 = String::from_utf8(get_notes.notes.get(&(1 as u8)).unwrap().note.clone()).unwrap();
+    let label_2 = String::from_utf8(get_notes.notes.get(&(1 as u8)).unwrap().label.clone()).unwrap();
+    assert_eq!(label_1, "label".to_string());
+    assert_eq!(note_1, "some note data".to_string());
+    assert_eq!(label_2, "la".to_string());
+    assert_eq!(note_2, "some ".to_string());
 }
 
 #[test]

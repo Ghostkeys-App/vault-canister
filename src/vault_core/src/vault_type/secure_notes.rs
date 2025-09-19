@@ -36,8 +36,8 @@ impl Storable for SecureNote {
 
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
         let label_size: usize = usize::from(bytes[0]);
-        let label = bytes[1..label_size].to_vec();
-        let note = bytes[label_size..].to_vec();
+        let label = bytes[1..1+label_size].to_vec();
+        let note = bytes[1+label_size..].to_vec();
         Self {
             label,
             note

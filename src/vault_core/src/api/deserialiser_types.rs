@@ -297,8 +297,10 @@ pub struct SecureNoteEntry {
 impl SecureNoteEntry {
     pub fn new(data: Vec<u8>) -> Self {
         let header = SecureNoteHeader::new(data[0..4].to_vec());
-        let label = data[4..4 + header.label_size as usize].to_vec();
-        let note = data[4 + header.label_size as usize..4 + header.label_size as usize + header.note_size as usize].to_vec();
+        let mut index = 4;
+        let label = data[index..index + header.label_size as usize].to_vec();
+        index += header.label_size as usize;
+        let note = data[index..index + header.note_size as usize].to_vec();
         Self { header, label, note }
     }
 }
