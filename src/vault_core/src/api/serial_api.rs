@@ -38,6 +38,10 @@ fn _process_spreadsheet_columns(user_id: Principal, vault_id: Principal, columns
     let mut sc = sc.borrow_mut();
     for column in columns.columns.iter() {
         let key = ColumnKey::new(user_id, vault_id, column.header.x);
+        if column.name.is_empty() && column.header.hidden == 0 {
+            sc.remove(&key);
+            continue;
+        }
         let value = ColumnData::new(if column.header.hidden > 0 { true } else { false }, column.name.clone());
         sc.insert(key, value);
     }
