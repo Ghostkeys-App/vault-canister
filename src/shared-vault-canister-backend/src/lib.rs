@@ -8,7 +8,7 @@ mod test;
 
 use vault_core::{
     api::{
-        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_delete_vault, _global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_columns_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
+        key_api::{derive_vetkey, retrieve_vetkey_per_user, storage_user_of, GhostkeysVetKdArgs}, serial_api::{_delete_vault, _global_sync, _login_data_deletes, _login_data_sync, _login_full_sync, _login_metadata_delete, _login_metadata_sync, _purge_user, _secret_notes_sync, _vault_names_sync, _vault_spreadsheet_columns_sync, _vault_spreadsheet_delete, _vault_spreadsheet_sync}
     },
     stable::{
         types::GeneralState,
@@ -245,6 +245,14 @@ fn delete_vault(vault_id: Principal) {
     let user_id = msg_caller();
     GENERAL_STATE.with(|state| {
         _delete_vault(user_id, vault_id, state);
+    })
+}
+
+#[update]
+fn purge_user() {
+    let user_id = msg_caller();
+    GENERAL_STATE.with(|state| {
+        _purge_user(user_id, state);
     })
 }
 

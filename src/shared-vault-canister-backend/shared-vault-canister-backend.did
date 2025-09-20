@@ -39,6 +39,7 @@ service : {
   get_vault_names : () -> (VaultNames) query;
   get_vetkey_for_user : (text) -> (opt blob) query;
   global_sync : (principal, blob) -> ();
+  purge_user : () -> ();
   shared_canister_init : (principal, principal) -> ();
   vault_login_data_deletes : (principal, blob) -> ();
   vault_login_data_sync : (principal, blob) -> ();

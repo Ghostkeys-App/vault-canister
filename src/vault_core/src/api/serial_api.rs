@@ -1,7 +1,7 @@
 use candid::Principal;
 use ic_stable_structures::Storable;
 use crate::{
-    api::deserialiser::{deserialise_column_data, deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, 
+    api::{deserialiser::{deserialise_column_data, deserialise_delete_cells, deserialise_global_sync, deserialise_login_data_sync, deserialise_login_full_sync, deserialise_login_metadata, deserialise_secure_notes, deserialise_spreadsheet, deserialise_vault_names}, dev_api::_get_vault_names}, 
     stable::types::{ColumnsInfo, GeneralState, LoginsColumns, LoginsMap, NotesMap, SpreadsheetMap, VaultNamesMap}, 
     vault_type::{
         logins::LoginSiteKey, 
@@ -256,9 +256,8 @@ pub fn _global_sync(user_id: Principal, vault_id: Principal, update: Vec<u8>, st
     _process_spreadsheet_columns(user_id, vault_id, &global_data.spreadsheet_columns, &state.spreadsheet_columns);
 }
 
-pub fn _delete_vault(user_id: Principal, vault_id: Principal, state: &GeneralState) {
-    let principals = vec![user_id.into_bytes(), vault_id.into_bytes()].concat();
-    let mut lc = state.logins_columns.borrow_mut();
+fn _process_delete_vault(principals: Vec<u8>, state: &GeneralState) {
+     let mut lc = state.logins_columns.borrow_mut();
     let keys_to_remove: Vec<_> = lc.iter()
         .filter(|entry| entry.key().principals_match(&principals))
         .map(|entry| entry.key().clone())
@@ -316,5 +315,19 @@ pub fn _delete_vault(user_id: Principal, vault_id: Principal, state: &GeneralSta
         .collect();
     for key in keys_to_remove {
         vnm.remove(&key);
+    }
+}
+
+pub fn _delete_vault(user_id: Principal, vault_id: Principal, state: &GeneralState) {
+    let principals = vec![user_id.into_bytes(), vault_id.into_bytes()].concat();
+    _process_delete_vault(principals, state);
+}
+
+pub fn _purge_user(user_id: Principal, state: &GeneralState) {
+    let vault_names = _get_vault_names(user_id, &state.vault_names_map);
+
+    for (vault_id, _) in vault_names.names {
+        let principals = vec![user_id.into_bytes(), vault_id.clone().into_bytes()].concat();
+        _process_delete_vault(principals, state);
     }
 }
