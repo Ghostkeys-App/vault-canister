@@ -36,9 +36,7 @@ A *vault* is a **named container** of multiple secret collections:
 
 * **Website logins** — list of website identifiers with a vector of key/value pairs (username, password, notes, etc.). Values should be ciphertext strings for sensitive fields.
 * **Secure notes** — `(title, body)` pairs. Body should be ciphertext.
-* **Flexible grid** — a spreadsheet‑style grid with **column schema** and **(row,col) keyed cells**. A boolean flag per column indicates *secret/plain* so UIs know to treat cells as sensitive. We still recommend encrypting everything by default.
-
-
+* **Flexible grid** — a spreadsheet‑style grid with **column schema** and **(row,col) keyed cells**. A boolean flag per column indicates *secret/plain* so UIs know whether to obscure their cells. Note that this is only a visual effect to prevent shoulder surfing - we still recommend encrypting everything by default.
 
 ---
 
@@ -83,6 +81,19 @@ A *vault* is a **named container** of multiple secret collections:
 
 ---
 
+## Interfaces
+
+**Syncs**
+
+- Performed using a purpose-built serialisation protocol, optimised for responsiveness and lean payloads. 
+- It is strongly recommended to use the provided [ghostkeys sdk](https://github.com/Ghostkeys-App/ghostkeys-sdk) to serialise data before sending it to vault endpoints.
+
+**Fetches**
+
+- Return structures for vault data, designed for ease of use. 
+- The candid file contains the definitions for integration with client.
+---
+
 ## Local Dev: build, deploy, call
 
 ### Prereqs
@@ -93,6 +104,9 @@ A *vault* is a **named container** of multiple secret collections:
 ```bash
 rustup target add wasm32-unknown-unknown
 
+# Build and run unit tests
+cargo test
+
 # Start local replica
 dfx start --clean --background
 
@@ -102,43 +116,6 @@ dfx deploy
 # Generate declarations (if your UI needs them)
 dfx generate vault-canister-backend
 ```
-
-
-**Derive vetKD key (PerUser)**
-
-```bash
-dfx canister call vault-canister-backend derive_vetkd_encrypted_key '(
-  record {
-    scope = variant { PerUser = record { user = principal "w7x7r-cok77-xa" } };
-    input = vec { 1; 2; 3; 4 };                # domain separation / context bytes
-    transport_public_key = vec { 5; 6; 7; 8 }; # client ephemeral pubkey bytes
-  }
-)'
-```
->***The first things to be done is to call derive_vetkd_encrypted_key endpoint to be whitelisted for other calls with your Principal.***
-
-**Upsert a small vault**
-
-```bash
-# helper: a minimal VaultData literal
-VAULT_DATA='record {
-  flexible_grid_columns = vec { record { "Name"; record { 0 : nat32; false } } };
-  vault_name = "Personal";
-  secure_notes = vec { record { "Note 1"; "ENC:base64..." } };
-  flexible_grid = vec { record { record { col = 0 : nat32; row = 0 : nat32 }; "ENC:base64..." } };
-  website_logins = vec {
-    record { "github.com"; vec { record { "username"; "alice" }; record { "password"; "ENC:base64..." } } }
-  }
-}'
-
-dfx canister call vault-canister-backend add_or_update_vault '("user_abc","Personal",'"$VAULT_DATA"')'
-```
-**List all vaults for a user**
-
-```bash
-dfx canister call vault-canister-backend get_all_vaults_for_user '("user_abc")'
-```
----
 
 ## Build & Release Artifacts
 
@@ -151,8 +128,8 @@ The CI builds produce:
 
 ---
 
-
 ## Stable Memory & Upgrades
 
-* Storage uses stable structures (e.g., B‑Trees/Maps) keyed by `(user_id, vault_name)` → `VaultData`.
+* **Storage**: uses stable structures (e.g., BTreeMaps) divided by data type for efficient and fast retrieval, keyed by `(user_id, vault_name)` → `Data`.
 * **Isolation**: in shared mode, authorization is by **caller principal + user mapping**; do not expose cross‑user reads. In dedicated mode, the controller set (Factory + ops) governs access.
+* **Secure Access**: Callers are only able to retrieve their data. *All* data is securely client-side encrypted, protecting secrets even in the case of canister leaks.
