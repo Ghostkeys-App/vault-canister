@@ -137,26 +137,26 @@ pub fn _get_logins(user_id: Principal, vault_id: Principal, lm: &LoginsMap, lc: 
         principals
     };
 
-    let column_labels: HashMap<u8, Vec<u8>> = {
-        let mut labels = HashMap::new();
-        for entry in lc.borrow().iter() {
-            let key = entry.key();
-            if !key.principals_match(&compare_principals) {
-                continue;
-            }
-            labels.insert(key.x, entry.value().clone());
+    for entry in lc.borrow().iter() {
+        let key = entry.key();
+        if !key.principals_match(&compare_principals) {
+            continue;
         }
-        labels
-    };
+        let column: LoginColumn = LoginColumn { label: entry.value().clone(), rows: HashMap::new() };
+        logins.columns.insert(key.x, column);
+    }
 
     entries.iter().for_each(|entry| {
         let key = entry.key();
         if key.principals_match(&compare_principals) {
-            logins.columns
-                .entry(key.x)
-                .or_insert_with(|| LoginColumn { label: column_labels.get(&key.x).cloned().unwrap_or_default(), rows: HashMap::new() })
-                .rows
+            let column = logins.columns.get_mut(&key.x);
+            if column.is_none() {
+                ic_cdk::trap(format!("Login column {} has no associated label metadata", &key.x));
+            }
+            else {
+                column.unwrap().rows
                 .insert(key.y, entry.value().data.clone());
+            }
         }
     });
 
