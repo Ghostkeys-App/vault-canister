@@ -36,13 +36,15 @@ pub fn _vault_names_sync(user_id: Principal, update: &Vec<u8>, vnm: &VaultNamesM
 
 fn _process_spreadsheet_columns(user_id: Principal, vault_id: Principal, columns: &super::deserialiser_types::SpreadsheetColumns, sc: &ColumnsInfo) {
     let mut sc = sc.borrow_mut();
+
     for column in columns.columns.iter() {
         let key = ColumnKey::new(user_id, vault_id, column.header.x);
-        if column.name.is_empty() && column.header.hidden == 0 {
+        let hidden = if column.header.hidden > 0 { true } else { false };
+        if column.name.is_empty() && !hidden {
             sc.remove(&key);
             continue;
         }
-        let value = ColumnData::new(if column.header.hidden > 0 { true } else { false }, column.name.clone());
+        let value = ColumnData::new(hidden, column.name.clone());
         sc.insert(key, value);
     }
 }
