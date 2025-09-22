@@ -218,10 +218,10 @@ impl Storable for ColumnData {
     fn to_bytes(&self) -> std::borrow::Cow<'_, [u8]> {
         let mut data : Vec<u8> = Vec::new();
         if self.hidden {
-            data.push(0x0);
+            data.push(0x1);
         }
         else {
-            data.push(0x1);
+            data.push(0x0);
         }
         data.extend(self.name.iter());
         data.into()
@@ -230,10 +230,10 @@ impl Storable for ColumnData {
     fn into_bytes(self) -> Vec<u8> {
         let mut data : Vec<u8> = Vec::new();
         if self.hidden {
-            data.push(0x0);
+            data.push(0x1);
         }
         else {
-            data.push(0x1);
+            data.push(0x0);
         }
         data.extend(self.name.iter());
         data

@@ -1,9 +1,8 @@
-use core::sync;
 use std::cell::RefCell;
 
 use candid::Principal;
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, DefaultMemoryImpl, StableBTreeMap, Storable};
-use vault_core::{api::{dev_api::{_get_logins, _get_notes, _get_vault}, serial_api::{_global_sync, _login_data_sync, _login_metadata_sync, _secret_notes_sync, _vault_names_sync}}, stable::types::GeneralState, vault_type::spreadsheet::SpreadsheetKey};
+use vault_core::{api::{dev_api::{_get_columns_info, _get_logins, _get_notes, _get_vault}, serial_api::{_global_sync, _login_data_sync, _login_metadata_sync, _secret_notes_sync, _vault_names_sync}}, stable::{state, types::GeneralState}, vault_type::spreadsheet::SpreadsheetKey};
 use vault_core::api::dev_api::_get_vault_names;
 
 fn some_user_id() -> Principal {
@@ -38,7 +37,8 @@ fn some_more_spreadsheet_data() -> Vec<u8> {
 
 fn some_columns_data() -> Vec<u8> {
     vec![
-        0, 3, 0, 0, 97, 98, 99, 0, 4, 1, 1, 100, 101, 102, 103
+        0, 3, 0, 0, 97, 98, 99, 
+        0, 4, 1, 1, 100, 101, 102, 103
     ]
 }
 
@@ -258,6 +258,38 @@ pub fn test_get_notes() {
     assert_eq!(note_1, "some note data".to_string());
     assert_eq!(label_2, "la".to_string());
     assert_eq!(note_2, "some ".to_string());
+}
+
+#[test]
+pub fn test_spreadsheet_columns() {
+    let columns_data = some_columns_data();
+
+    // test sync endpoint
+    let state = GeneralState::init();
+    vault_core::api::serial_api::_vault_spreadsheet_columns_sync(some_user_id(), some_vault_id(), columns_data, &state.spreadsheet_columns);
+    let stored_columns = _get_columns_info(some_user_id(), some_vault_id(), &state.spreadsheet_columns);
+    assert_eq!(stored_columns.len(), 2);
+    assert_eq!(stored_columns.get(&0).unwrap().0, vec![97, 98, 99]);
+    assert_eq!(stored_columns.get(&0).unwrap().1, false);
+    assert_eq!(stored_columns.get(&1).unwrap().0, vec![100, 101, 102, 103]);
+    assert_eq!(stored_columns.get(&1).unwrap().1, true);
+
+    // test column deletion
+    let columns_data = vec![
+        0, 0, 0, 0
+    ];
+    vault_core::api::serial_api::_vault_spreadsheet_columns_sync(some_user_id(), some_vault_id(), columns_data, &state.spreadsheet_columns);
+    let stored_columns = _get_columns_info(some_user_id(), some_vault_id(), &state.spreadsheet_columns);
+    assert_eq!(stored_columns.len(), 1);
+    assert_eq!(stored_columns.get(&1).unwrap().0, vec![100, 101, 102, 103]);
+    assert_eq!(stored_columns.get(&1).unwrap().1, true);
+
+    let columns_data = vec![
+        0, 0, 0, 1
+    ];
+    vault_core::api::serial_api::_vault_spreadsheet_columns_sync(some_user_id(), some_vault_id(), columns_data, &state.spreadsheet_columns);
+    let stored_columns = _get_columns_info(some_user_id(), some_vault_id(), &state.spreadsheet_columns);
+    assert_eq!(stored_columns.len(), 0);
 }
 
 #[test]
