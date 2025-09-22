@@ -9,7 +9,7 @@ use ic_vetkeys::is_valid_transport_public_key_encoding;
 
 use crate::stable::types::KeyManagementState;
 
-const KEY_NAME: &str = "test_key_1"; // use "key_1" on mainnet. For BETA will use test_key_1
+const KEY_NAME: &str = "key_1"; // use "key_1" on mainnet. For BETA will use test_key_1
 const DOMAIN: &str = "ghostkeys:v1";
 const KEY_CURVE: VetKDCurve = VetKDCurve::Bls12_381_G2;
 
